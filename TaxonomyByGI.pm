@@ -6,6 +6,8 @@ package TaxonomyByGI;
 
 my $TAXDIR = '/bio/data/NCBI/nt/taxonomy'; # where are the taxonomy-files stored
 
+# Version 0.1 24.06.2009
+
 #
 # Command: getLineagesbyGI( ref to list of gis, type )
 #
@@ -25,7 +27,8 @@ sub getLineagesbyGI(\@$) {
     my @gilist = @{shift()};
     my $seqtype = uc(shift);
 
-    die "Use of [Nn] for nucleotides or [Pp] for proteins as type!\n" unless ($seqtype eq "N" || $seqtype eq "P");
+    die "Use of [Nn] for nucleotides or [Pp] for p
+roteins as type!\n" unless ($seqtype eq "N" || $seqtype eq "P");
 
     my %gilist2search = ();
     # check if gis are only numbers!
