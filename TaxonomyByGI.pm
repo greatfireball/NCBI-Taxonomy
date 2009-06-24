@@ -4,9 +4,23 @@ package TaxonomyByGI;
 
 # allows to get the linnage for a given set of GIs
 
-my $TAXDIR = '/bio/data/NCBI/nt/taxonomy';
+my $TAXDIR = '/bio/data/NCBI/nt/taxonomy'; # where are the taxonomy-files stored
 
-sub getLinneagesbyGI(\@$) {
+#
+# Command: getLineagesbyGI( ref to list of gis, type )
+#
+# ref to list of gis ... should be selfexplaining
+# type ... [NnPp] for nuleotides or proteins
+#
+# result is a reference of a hash of list of hash
+#        first hash key are the GIs
+#        elements of list are the nodes of the tree upwards to the root
+#        hash keys for the elements
+#                sciname -> scientific name of taxon
+#                rank -> rank given by NCBI
+#                taxid -> taxid resulting from GI
+
+sub getLineagesbyGI(\@$) {
 
     my @gilist = @{shift()};
     my $seqtype = uc(shift);
