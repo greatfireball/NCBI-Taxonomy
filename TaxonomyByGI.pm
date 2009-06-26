@@ -10,11 +10,15 @@ use warnings;
 my $TAXDIR = '/bio/data/NCBI/nt/taxonomy'; # where are the taxonomy-files stored
 my @nodes = getnodesimported();            # import the nodes.dmp for later use at loading of the module
 my %names_by_taxid = getnamesimported();   # import the names.dmp for later use at loading of the module
+my %merged_by_taxid = getmergedimported(); # import the merged.dmp for later use at loading of the module
 
 # Version 0.1 24.06.2009
 # Version 0.2 25.06.2009
 # Version 0.3 26.06.2009
 #       no protein/nucleic acid parameter is nessesary
+# Version 0.4 26.06.2009
+#       Support for merged TaxIDs
+#       for non exstisting gis links to history tool of NCBI will be returned
 
 #
 # Command: getLineagesbyGI( ref to list of gis )
@@ -56,7 +60,7 @@ sub getLineagesbyGI(\@) {
 #                rank -> rank given by NCBI
 #                taxid -> taxid resulting from GI
 #
-# Note all ranks used by NCBI are
+# Note all ranks used by NCBI arex
 #
 # "class","family","forma","genus","infraclass","infraorder","kingdom","no rank","order",
 # "parvorder","phylum","species","species group","species subgroup","subclass","subfamily",
@@ -135,8 +139,12 @@ sub check4gis(\%) {
 	my $bytepos = ($gi-1)*$bytesperline;
 	seek(FH, $bytepos, 0);
 	read(FH, $tmp, $bytesperline);
-	my @splitted_line = split(/\t/, $tmp);
-	$taxid_found_by_gi{$gi} = int($splitted_line[1]);
+	if ($tmp =~ /(\d+)\t\s*(\d+)/) {
+	#my @splitted_line = split(/\t/, $tmp);
+	    $taxid_found_by_gi{$gi} = int($2);
+	} else {
+	    print STDERR "No entry for gi|$gi Try ".'http://www.ncbi.nlm.nih.gov/entrez/sutils/girevhist.cgi?val='."$gi\n";
+	}
     }
 
     close(FH);
@@ -144,11 +152,20 @@ sub check4gis(\%) {
     # now I can perform the mapping
     my %Lineage_by_gi = ();
     foreach my $gi (keys %taxid_found_by_gi) {
-	my $taxid = $taxid_found_by_gi{$gi};
+	my $taxid = checktaxid4merged($taxid_found_by_gi{$gi});
+	if (!defined $taxid) {
+	    print STDERR "$gi liefert eine undefinierte TaxID\n";
+	    next;
+	}
 	$Lineage_by_gi{$gi} = ();
 	while () {
 	    push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes[$taxid]->{rank}});
-	    $taxid = $nodes[$taxid]->{ancestor};
+	    $taxid = checktaxid4merged($nodes[$taxid]->{ancestor});
+	    if (!defined $taxid) {
+		print STDERR "Bei $gi wird eine undefinierte TaxID zurückgeliefert\n";
+		delete $Lineage_by_gi{$gi};
+		last;
+	    }
 	    if ($taxid == 1) {push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes[$taxid]->{rank}}); last;};
 	}
     }
@@ -194,6 +211,24 @@ sub getnamesimported {
     close(FH);
 
     return %names_by_taxid;
+}
+
+sub getmergedimported {
+    my %merged_by_taxid = ();
+    open(FH, "<".$TAXDIR."/merged.dmp");
+    while (<FH>) {
+        my @tmp = split(/[\s\|]+/, $_ );
+	print STDERR "Doppelbelegung von $tmp[0]" if (defined $merged_by_taxid{$tmp[0]});
+        $merged_by_taxid{$tmp[0]} = $tmp[1];
+    }
+    close(FH);
+
+    return %merged_by_taxid;
+}
+
+sub checktaxid4merged ($) {
+    my ($taxid) = @_;
+    return (exists $merged_by_taxid{$taxid})?$merged_by_taxid{$taxid}:$taxid;
 }
 
 1;
