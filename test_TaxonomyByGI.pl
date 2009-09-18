@@ -23,4 +23,4 @@ use Data::Dumper;
 #my $a=TaxonomyByGI::getLineagesbyGI(@gis);
 my $a=TaxonomyByGI::getTaxonomicRankbyGI(\@gis, 'family');
 
-#print Dumper($a);
+print Dumper($a);
