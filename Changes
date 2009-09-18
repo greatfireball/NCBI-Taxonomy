@@ -1,0 +1,42 @@
+Revision history for Perl extension NCBI::Taxonomy.
+
+0.1  2009-06-24
+
+0.2  2009-06-25
+
+0.3  2009-06-26
+	
+	- no protein/nucleic acid parameter is nessesary
+
+0.4  2009-06-26
+
+	- Support for merged TaxIDs
+
+	- for non exstisting gis links to history tool of NCBI will be
+          returned
+
+0.5  2009-09-19T00:51:00+02:00
+	
+	- first version compatible to the CPAN standards. Template was
+          created using h2xs 1.23 with options
+		-d -XA -n NCBI::Taxonomy
+
+	- I fixed the files Changes, README, MANIFEST, but the whole
+          module files will be changed in the next version
+
+0.51 2009-09-19T01:08:00+02:00
+
+	- I moved the old module TaxonomyByGi to my new module
+          NCBI::Taxonomy and changed the files Changes and README. I
+          did not add documentation.
+
+	- added the file Changes to the version control (I forgot to add it ;) )
+
+      TODO:
+
+	- no tests writen
+
+	- have to fill the documentation
+
+	- I want to add the functions to download and prepare the
+          index-files

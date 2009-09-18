@@ -1,24 +1,38 @@
-package TaxonomyByGI;
+package NCBI::Taxonomy;
 
+use 5.008000;
 use strict;
 use warnings;
 
-# written by Frank Förster
+require Exporter;
 
-# allows to get the linnage for a given set of GIs
+our @ISA = qw(Exporter);
+
+# Items to export into callers namespace by default. Note: do not export
+# names by default without a very good reason. Use EXPORT_OK instead.
+# Do not simply export all your public functions/methods/constants.
+
+# This allows declaration	use NCBI::Taxonomy ':all';
+# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
+# will save memory.
+our %EXPORT_TAGS = ( 'all' => [ qw(
+	
+) ] );
+
+our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
+
+our @EXPORT = qw(
+	
+);
+
+our $VERSION = '0.51';
+
+# Preloaded methods go here.
 
 my $TAXDIR = '/bio/data/NCBI/nt/taxonomy'; # where are the taxonomy-files stored
 my @nodes = getnodesimported();            # import the nodes.dmp for later use at loading of the module
 my %names_by_taxid = getnamesimported();   # import the names.dmp for later use at loading of the module
 my %merged_by_taxid = getmergedimported(); # import the merged.dmp for later use at loading of the module
-
-# Version 0.1 24.06.2009
-# Version 0.2 25.06.2009
-# Version 0.3 26.06.2009
-#       no protein/nucleic acid parameter is nessesary
-# Version 0.4 26.06.2009
-#       Support for merged TaxIDs
-#       for non exstisting gis links to history tool of NCBI will be returned
 
 #
 # Command: getLineagesbyGI( ref to list of gis )
@@ -232,3 +246,54 @@ sub checktaxid4merged ($) {
 }
 
 1;
+__END__
+# Below is stub documentation for your module. You'd better edit it!
+
+=head1 NAME
+
+NCBI::Taxonomy - Perl extension for blah blah blah
+
+=head1 SYNOPSIS
+
+  use NCBI::Taxonomy;
+  blah blah blah
+
+=head1 DESCRIPTION
+
+Stub documentation for NCBI::Taxonomy, created by h2xs. It looks like the
+author of the extension was negligent enough to leave the stub
+unedited.
+
+Blah blah blah.
+
+=head2 EXPORT
+
+None by default.
+
+
+
+=head1 SEE ALSO
+
+Mention other useful documentation such as the documentation of
+related modules or operating system documentation (such as man pages
+in UNIX), or any relevant external documentation such as RFCs or
+standards.
+
+If you have a mailing list set up for your module, mention it here.
+
+If you have a web site set up for your module, mention it here.
+
+=head1 AUTHOR
+
+Frank Foerster, E<lt>frf53jh@biozentrum.uni-wuerzburg.deE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2009 by Frank Foerster
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.10.0 or,
+at your option, any later version of Perl 5 you may have available.
+
+
+=cut
