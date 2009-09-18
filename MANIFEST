@@ -1,0 +1,6 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/NCBI-Taxonomy.t
+lib/NCBI/Taxonomy.pm
