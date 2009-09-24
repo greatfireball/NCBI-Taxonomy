@@ -167,9 +167,9 @@ sub check4gis(\%) {
 	    } else {
 		my @taxons = $output =~ /db_xref="taxon:(\d+)"/g;
 		if (@taxons == 1) {
-		    $taxid_found_by_gi{$gi} = int($axons[0]);
+		    $taxid_found_by_gi{$gi} = int($taxons[0]);
 		    print STDERR "Have to download the GenBank file for GI|$gi but was able to retrieve an Taxon-ID\n";
-		} elseif (@taxons > 1) {
+		} elsif (@taxons > 1) {
 		    print STDERR "Error on retrieving a single Taxon-ID for GI|$gi. Returned were the following Taxon-IDs:".join(",", @taxons)."\n";
 		} else {
 		    print STDERR "Error on retrieving Taxon-ID for GI|$gi\n";
