@@ -40,3 +40,9 @@ Revision history for Perl extension NCBI::Taxonomy.
 
 	- I want to add the functions to download and prepare the
           index-files
+
+0.511 2009-09-24T13:08:00+02:00
+
+        - added a handling for GIs which could not be found in the
+          index-file and had no substitution comment inside the
+          Genbank Entry
