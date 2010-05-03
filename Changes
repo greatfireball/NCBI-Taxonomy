@@ -46,3 +46,7 @@ Revision history for Perl extension NCBI::Taxonomy.
         - added a handling for GIs which could not be found in the
           index-file and had no substitution comment inside the
           Genbank Entry
+
+0.52 2010-05-03T17:43:00+02:00
+
+        - added a handler for download errors caused by NCBI requests

@@ -26,11 +26,11 @@ our @EXPORT = qw(
 	
 );
 
-our $VERSION = '0.511';
+our $VERSION = '0.52';
 
 # Preloaded methods go here.
 
-my $TAXDIR = '/bio/data/NCBI/nt/taxonomy'; # where are the taxonomy-files stored
+my $TAXDIR = '/bio/data/NCBI/taxonomy';    # where are the taxonomy-files stored
 my @nodes = getnodesimported();            # import the nodes.dmp for later use at loading of the module
 my %names_by_taxid = getnamesimported();   # import the names.dmp for later use at loading of the module
 my %merged_by_taxid = getmergedimported(); # import the merged.dmp for later use at loading of the module
@@ -144,7 +144,7 @@ sub check4gis(\%) {
 
     my %taxid_found_by_gi = ();
 
-    open(FH, "<".$TAXDIR."/tmp.txt");
+    open(FH, "<".$TAXDIR."/gi_taxid.txt");
     binmode(FH);
 
     my $bytesperline = 23;
@@ -159,21 +159,25 @@ sub check4gis(\%) {
 	    $taxid_found_by_gi{$gi} = int($2);
 	} else {
 	    my $output = qx(wget -q -O - 'http://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?tool=portal&db=nuccore&val=$gi&dopt=genbank&sendto=on&log$=seqview&extrafeat=976&maxplex=1');
-	    if ($output =~ /^COMMENT\s+\[WARNING\] On (.+) this sequence was replaced by.+gi:(\d+)\./msg) {
-		my ($datestring, $new_gi) = ($1,$2);
-		my $parser = DateTime::Format::Natural->new;
-		my $dt = $parser->parse_datetime($datestring);
-		print STDERR "It seems GI|$gi was substituted on ".$dt." with GI|$new_gi (".'http://www.ncbi.nlm.nih.gov/entrez/sutils/girevhist.cgi?val='."$gi)\n";
-	    } else {
-		my @taxons = $output =~ /db_xref="taxon:(\d+)"/g;
-		if (@taxons == 1) {
-		    $taxid_found_by_gi{$gi} = int($taxons[0]);
-		    print STDERR "Have to download the GenBank file for GI|$gi but was able to retrieve an Taxon-ID\n";
-		} elsif (@taxons > 1) {
-		    print STDERR "Error on retrieving a single Taxon-ID for GI|$gi. Returned were the following Taxon-IDs:".join(",", @taxons)."\n";
+	    if ($? == 0) {
+		if ($output =~ /^COMMENT\s+\[WARNING\] On (.+) this sequence was replaced by.+gi:(\d+)\./msg) {
+		    my ($datestring, $new_gi) = ($1,$2);
+		    my $parser = DateTime::Format::Natural->new;
+		    my $dt = $parser->parse_datetime($datestring);
+		    print STDERR "It seems GI|$gi was substituted on ".$dt." with GI|$new_gi (".'http://www.ncbi.nlm.nih.gov/entrez/sutils/girevhist.cgi?val='."$gi)\n";
 		} else {
-		    print STDERR "Error on retrieving Taxon-ID for GI|$gi\n";
+		    my @taxons = $output =~ /db_xref="taxon:(\d+)"/g;
+		    if (@taxons == 1) {
+			$taxid_found_by_gi{$gi} = int($taxons[0]);
+			print STDERR "Have to download the GenBank file for GI|$gi but was able to retrieve an Taxon-ID\n";
+		    } elsif (@taxons > 1) {
+			print STDERR "Error on retrieving a single Taxon-ID for GI|$gi. Returned were the following Taxon-IDs:".join(",", @taxons)."\n";
+		    } else {
+			print STDERR "Error on retrieving Taxon-ID for GI|$gi\n";
+		    }
 		}
+	    } else {
+		print STDERR "Error on receiving the following URL: http://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?tool=portal&db=nuccore&val=$gi&dopt=genbank&sendto=on&log$=seqview&extrafeat=976&maxplex=1\n";
 	    }
 	}
     }
