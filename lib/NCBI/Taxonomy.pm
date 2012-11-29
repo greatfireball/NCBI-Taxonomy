@@ -26,11 +26,11 @@ our @EXPORT = qw(
 	
 );
 
-our $VERSION = '0.52';
+our $VERSION = '0.52.1';
 
 # Preloaded methods go here.
 
-my $TAXDIR = '/bio/data/NCBI/taxonomy';    # where are the taxonomy-files stored
+my $TAXDIR = '/bio/data/NCBI/taxonomy/';   # where are the taxonomy-files stored
 my @nodes = getnodesimported();            # import the nodes.dmp for later use at loading of the module
 my %names_by_taxid = getnamesimported();   # import the names.dmp for later use at loading of the module
 my %merged_by_taxid = getmergedimported(); # import the merged.dmp for later use at loading of the module
@@ -75,7 +75,7 @@ sub getLineagesbyGI(\@) {
 #                rank -> rank given by NCBI
 #                taxid -> taxid resulting from GI
 #
-# Note all ranks used by NCBI arex
+# Note all ranks used by NCBI are
 #
 # "class","family","forma","genus","infraclass","infraorder","kingdom","no rank","order",
 # "parvorder","phylum","species","species group","species subgroup","subclass","subfamily",
@@ -147,15 +147,14 @@ sub check4gis(\%) {
     open(FH, "<".$TAXDIR."/gi_taxid.txt");
     binmode(FH);
 
-    my $bytesperline = 23;
+    my $bytesperline = 24;
     my $tmp = "";
 
     foreach my $gi (keys %$gilist) {
 	my $bytepos = ($gi-1)*$bytesperline;
 	seek(FH, $bytepos, 0);
 	read(FH, $tmp, $bytesperline);
-	if ($tmp =~ /(\d+)\t\s*(\d+)/) {
-	#my @splitted_line = split(/\t/, $tmp);
+	if (($tmp =~ /(\d+)\t\s*(\d+)/) && ($gi == $1)) {
 	    $taxid_found_by_gi{$gi} = int($2);
 	} else {
 	    my $output = qx(wget -q -O - 'http://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?tool=portal&db=nuccore&val=$gi&dopt=genbank&sendto=on&log$=seqview&extrafeat=976&maxplex=1');
