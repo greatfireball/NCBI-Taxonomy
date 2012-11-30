@@ -7,16 +7,34 @@ use DateTime::Format::Natural;
 
 use Storable qw(retrieve);
 
-require Exporter;
+# second we generate a version number depending on the current main
+# version number and the revision. The main version number is located
+# at the globals module and can be accessed by the function
+# globals::getmainversionnumber()
+use version 0.77; my $mainversionnumber = "0.61"; '$Revision$' =~ /Revision:\s*(\d+)/; our $VERSION=version->declare($mainversionnumber.".".$1);
 
-our @ISA = qw(Exporter);
+# for logging purposes we use the Log4perl module
+use Log::Log4perl;
 
-our $VERSION = '0.60.0';
+my $init_text = "";
+while (<DATA>) { $init_text .= $_; }
+
+Log::Log4perl->init(\$init_text);
+my $logger = Log::Log4perl->get_logger();
+
+$logger->debug("Loaded the module NCBI::Taxonomy.pm (file ".__FILE__.", version: $VERSION)");
 
 my $TAXDIR = '/bio/data/NCBI/taxonomy/';   # where are the taxonomy-files stored
+my $taxdatabase = $TAXDIR."/gi_taxid.bin";
+my $taxnodesdatabase = $TAXDIR."/nodes.bin";
+my $taxnamesdatabase = $TAXDIR."/names.bin";
+my $taxmergeddatabase = $TAXDIR."/merged.bin";
+
 my @nodes = @{getnodesimported()};            # import the nodes.dmp for later use at loading of the module
 my %names_by_taxid = %{getnamesimported()};   # import the names.dmp for later use at loading of the module
 my %merged_by_taxid = %{getmergedimported()}; # import the merged.dmp for later use at loading of the module
+
+my %downloaded_gi_taxid = ();
 
 #
 # Command: getLineagesbyGI( ref to list of gis )
@@ -38,7 +56,7 @@ sub getLineagesbyGI(\@) {
     my %gilist2search = ();
     # check if gis are only numbers!
     foreach (@gilist) {
-	die "Use only numbers as GIs!" if ($_ =~ /\D/);
+	$logger->logcroak("Use only numbers as GIs!") if ($_ =~ /\D/);
 	$gilist2search{$_}++;
     }
 
@@ -79,12 +97,12 @@ sub getTaxonomicRankbyGI(\@$) {
 	}
     }
 
-    die "Use of not known taxonomic rank\n" if ($taxonrankvalid == 0);
+    $logger->logcroak("Use of not known taxonomic rank") if ($taxonrankvalid == 0);
 
     my %gilist2search = ();
     # check if gis are only numbers!
     foreach (@gilist) {
-	die "Use only numbers as GIs!" if ($_ =~ /\D/);
+	$logger->logcroak("Use only numbers as GIs!") if ($_ =~ /\D/);
 	$gilist2search{$_}++;
     }
 
@@ -127,7 +145,7 @@ sub check4gis(\%) {
 
     my %taxid_found_by_gi = ();
 
-    open(FH, "<".$TAXDIR."/gi_taxid.bin");
+    open(FH, "<", $taxdatabase) || logger->logdie("Unable to open taxonomic database at '$taxdatabase'");
     binmode(FH);
 
     my $data_format = "LL";
@@ -137,44 +155,53 @@ sub check4gis(\%) {
 
     foreach my $gi (keys %$gilist) {
 	my $bytepos = ($gi-1)*$bytesperline;
-	seek(FH, $bytepos, 0);
-	read(FH, $tmp, $bytesperline);
-	my ($dat_gi, $dat_taxid) = unpack($data_format, $tmp);
-	if ($dat_gi && $gi == $dat_gi) {
-	    $taxid_found_by_gi{$gi} = int($dat_taxid);
+	
+	# check if the taxid is not present, but was already downloaded
+	if (exists $downloaded_gi_taxid{$gi})
+	{
+	    $logger->info("Found taxid for gi $gi already downloaded");
+	    $taxid_found_by_gi{$gi} = int($downloaded_gi_taxid{$gi});
 	} else {
-	    my $output = qx(wget -q -O - 'http://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?tool=portal&db=nuccore&val=$gi&dopt=genbank&sendto=on&log$=seqview&extrafeat=976&maxplex=1');
-	    if ($? == 0) {
-		if ($output =~ /^COMMENT\s+\[WARNING\] On (.+) this sequence was replaced by.+gi:(\d+)\./msg) {
-		    my ($datestring, $new_gi) = ($1,$2);
-		    my $parser = DateTime::Format::Natural->new;
-		    my $dt = $parser->parse_datetime($datestring);
-		    print STDERR "It seems GI|$gi was substituted on ".$dt." with GI|$new_gi (".'http://www.ncbi.nlm.nih.gov/entrez/sutils/girevhist.cgi?val='."$gi)\n";
-		} else {
-		    my @taxons = $output =~ /db_xref="taxon:(\d+)"/g;
-		    if (@taxons == 1) {
-			$taxid_found_by_gi{$gi} = int($taxons[0]);
-			print STDERR "Have to download the GenBank file for GI|$gi but was able to retrieve an Taxon-ID\n";
-		    } elsif (@taxons > 1) {
-			print STDERR "Error on retrieving a single Taxon-ID for GI|$gi. Returned were the following Taxon-IDs:".join(",", @taxons)."\n";
-		    } else {
-			print STDERR "Error on retrieving Taxon-ID for GI|$gi\n";
-		    }
-		}
+	    seek(FH, $bytepos, 0);
+	    read(FH, $tmp, $bytesperline);
+	    my ($dat_gi, $dat_taxid) = unpack($data_format, $tmp);
+	    if ($dat_gi && $gi == $dat_gi) {
+		$taxid_found_by_gi{$gi} = int($dat_taxid);
 	    } else {
-		print STDERR "Error on receiving the following URL: http://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?tool=portal&db=nuccore&val=$gi&dopt=genbank&sendto=on&log$=seqview&extrafeat=976&maxplex=1\n";
+		my $output = qx(wget -q -O - 'http://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?tool=portal&db=nuccore&val=$gi&dopt=genbank&sendto=on&log$=seqview&extrafeat=976&maxplex=1');
+		if ($? == 0) {
+		    if ($output =~ /^COMMENT\s+\[WARNING\] On (.+) this sequence was replaced by.+gi:(\d+)\./msg) {
+			my ($datestring, $new_gi) = ($1,$2);
+			my $parser = DateTime::Format::Natural->new;
+			my $dt = $parser->parse_datetime($datestring);
+			$logger->info("It seems GI|$gi was substituted on ".$dt." with GI|$new_gi (".'http://www.ncbi.nlm.nih.gov/entrez/sutils/girevhist.cgi?val='."$gi)");
+		    } else {
+			my @taxons = $output =~ /db_xref="taxon:(\d+)"/g;
+			if (@taxons == 1) {
+			    $taxid_found_by_gi{$gi} = int($taxons[0]);
+			    $downloaded_gi_taxid{$gi} = int($taxons[0]);
+			    $logger->info("Have to download the GenBank file for GI|$gi but was able to retrieve an Taxon-ID\n");
+			} elsif (@taxons > 1) {
+			    $logger->error("Error on retrieving a single Taxon-ID for GI|$gi. Returned were the following Taxon-IDs:".join(",", @taxons));
+			} else {
+			    $logger->error("Error on retrieving Taxon-ID for GI|$gi");
+			}
+		    }
+		} else {
+		    $logger->error("Error on receiving the following URL: http://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?tool=portal&db=nuccore&val=$gi&dopt=genbank&sendto=on&log$=seqview&extrafeat=976&maxplex=1");
+		}
 	    }
 	}
     }
 
-    close(FH);
+    close(FH) || logger->logdie("Unable to close taxonomic database at '$taxdatabase'");
 
     # now I can perform the mapping
     my %Lineage_by_gi = ();
     foreach my $gi (keys %taxid_found_by_gi) {
 	my $taxid = checktaxid4merged($taxid_found_by_gi{$gi});
 	if (!defined $taxid) {
-	    print STDERR "$gi liefert eine undefinierte TaxID\n";
+	    $logger->error("Error $gi gives undefined TaxID");
 	    next;
 	}
 	$Lineage_by_gi{$gi} = ();
@@ -182,7 +209,7 @@ sub check4gis(\%) {
 	    push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes[$taxid]->{rank}});
 	    $taxid = checktaxid4merged($nodes[$taxid]->{ancestor});
 	    if (!defined $taxid) {
-		print STDERR "Bei $gi wird eine undefinierte TaxID zurückgeliefert\n";
+		$logger->error("Error $gi gives undefined TaxID");
 		delete $Lineage_by_gi{$gi};
 		last;
 	    }
@@ -207,31 +234,36 @@ sub check4gis(\%) {
 }
 
 sub getnodesimported {
-    my $nodes = retrieve($TAXDIR."/nodes.bin");
+    my $nodes = retrieve($taxnodesdatabase) || $logger->logcroak("Unable to read taxonomic nodes database from '$taxnodesdatabase'");
 
     return $nodes;
 }
 
 sub getnamesimported {
-    my $names_by_taxid = retrieve($TAXDIR."/names.bin");
+    my $names_by_taxid = retrieve($taxnamesdatabase)  || $logger->logcroak("Unable to read taxonomic names database from '$taxnamesdatabase'");
 
     return $names_by_taxid;
 }
 
 sub getmergedimported {
 
-    my $merged_by_taxid = retrieve($TAXDIR."/merged.bin");
+    my $merged_by_taxid = retrieve($taxmergeddatabase)  || $logger->logcroak("Unable to read merging database from '$taxmergeddatabase'");
     
     return $merged_by_taxid;
 }
 
 sub checktaxid4merged ($) {
     my ($taxid) = @_;
-    return (exists $merged_by_taxid{$taxid})?$merged_by_taxid{$taxid}:$taxid;
+    if (defined $taxid && exists $merged_by_taxid{$taxid})
+    {
+	return $merged_by_taxid{$taxid};
+    } else {
+	return $taxid;
+    }
 }
 
 1;
-__END__
+
 # Below is stub documentation for your module. You'd better edit it!
 
 =head1 NAME
@@ -288,3 +320,11 @@ at your option, any later version of Perl 5 you may have available.
 
 
 =cut
+
+__DATA__
+
+log4perl.logger = DEBUG, Screen
+log4perl.appender.Screen        = Log::Log4perl::Appender::Screen
+log4perl.appender.Screen.layout = Log::Log4perl::Layout::PatternLayout
+log4perl.appender.Screen.stderr = 1
+log4perl.appender.Screen.layout.ConversionPattern = %d %m %n
