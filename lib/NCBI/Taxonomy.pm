@@ -11,7 +11,7 @@ use Storable qw(retrieve);
 # version number and the revision. The main version number is located
 # at the globals module and can be accessed by the function
 # globals::getmainversionnumber()
-use version 0.77; my $mainversionnumber = "0.61"; '$Revision$' =~ /Revision:\s*(\d+)/; our $VERSION=version->declare($mainversionnumber.".".$1);
+use version 0.77; my $mainversionnumber = "0.62"; '$Revision$' =~ /Revision:\s*(\d+)/; our $VERSION=version->declare($mainversionnumber.".".$1);
 
 # for logging purposes we use the Log4perl module
 use Log::Log4perl;
@@ -35,6 +35,11 @@ my %names_by_taxid = %{getnamesimported()};   # import the names.dmp for later u
 my %merged_by_taxid = %{getmergedimported()}; # import the merged.dmp for later use at loading of the module
 
 my %downloaded_gi_taxid = ();
+
+# used for speed up
+my $max_ring_buffer_size = 7500;
+my @ring_buffer = ();
+my %ring_buffer_storage = ();
 
 #
 # Command: getLineagesbyGI( ref to list of gis )
@@ -204,16 +209,42 @@ sub check4gis(\%) {
 	    $logger->error("Error $gi gives undefined TaxID");
 	    next;
 	}
-	$Lineage_by_gi{$gi} = ();
-	while () {
-	    push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes[$taxid]->{rank}});
-	    $taxid = checktaxid4merged($nodes[$taxid]->{ancestor});
-	    if (!defined $taxid) {
-		$logger->error("Error $gi gives undefined TaxID");
-		delete $Lineage_by_gi{$gi};
-		last;
+
+	# check if the lineage exists in the ring_buffer
+	if (exists $ring_buffer_storage{$taxid})
+	{
+	    $logger->debug("Used ring buffer to speed up");
+	    $Lineage_by_gi{$gi} = [@{$ring_buffer_storage{$taxid}}]
+	} else {
+	    my $taxid4ringbuffer = $taxid;
+	    while () {
+		push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes[$taxid]->{rank}});
+		$taxid = checktaxid4merged($nodes[$taxid]->{ancestor});
+		if (!defined $taxid) {
+		    $logger->error("Error $gi gives undefined TaxID");
+		    delete $Lineage_by_gi{$gi};
+		    last;
+		}
+		if ($taxid == 1) {
+		    push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes[$taxid]->{rank}}); 
+		    # check if the ringbuffer is filled completely
+		    if (@ring_buffer >= $max_ring_buffer_size)
+		    {
+			while (@ring_buffer >= $max_ring_buffer_size)
+			{
+			    my $forremove = shift(@ring_buffer);
+			    delete ($ring_buffer_storage{$forremove});
+			    $logger->debug("Deleted from ring buffer!");
+			}
+		    } 
+	
+		    push(@ring_buffer, $taxid4ringbuffer);
+		    $ring_buffer_storage{$taxid4ringbuffer} = [@{$Lineage_by_gi{$gi}}];
+		    $logger->debug("Filled ring buffer!");
+
+		    last;
+		};
 	    }
-	    if ($taxid == 1) {push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes[$taxid]->{rank}}); last;};
 	}
     }
 
@@ -306,6 +337,14 @@ version 0.60.0
 
 A new version which uses a binary file type for storing the gi and taxid information.
 
+version 0.61.1853
+
+Switched to Log::Log4perl for messages and added croak commands for failing IO calls!
+
+version 0.62.1854
+
+I am using a ring buffer to save 6000 lineages for taxids to speed up the finding of the lineages.
+
 =head1 AUTHOR
 
 Frank Foerster, E<lt>frf53jh@biozentrum.uni-wuerzburg.deE<gt>
@@ -323,7 +362,7 @@ at your option, any later version of Perl 5 you may have available.
 
 __DATA__
 
-log4perl.logger = DEBUG, Screen
+log4perl.logger = INFO, Screen
 log4perl.appender.Screen        = Log::Log4perl::Appender::Screen
 log4perl.appender.Screen.layout = Log::Log4perl::Layout::PatternLayout
 log4perl.appender.Screen.stderr = 1
