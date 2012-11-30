@@ -5,35 +5,18 @@ use strict;
 use warnings;
 use DateTime::Format::Natural;
 
+use Storable qw(retrieve);
+
 require Exporter;
 
 our @ISA = qw(Exporter);
 
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
-
-# This allows declaration	use NCBI::Taxonomy ':all';
-# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
-# will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw(
-	
-) ] );
-
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-
-our @EXPORT = qw(
-	
-);
-
-our $VERSION = '0.52.1';
-
-# Preloaded methods go here.
+our $VERSION = '0.60.0';
 
 my $TAXDIR = '/bio/data/NCBI/taxonomy/';   # where are the taxonomy-files stored
-my @nodes = getnodesimported();            # import the nodes.dmp for later use at loading of the module
-my %names_by_taxid = getnamesimported();   # import the names.dmp for later use at loading of the module
-my %merged_by_taxid = getmergedimported(); # import the merged.dmp for later use at loading of the module
+my @nodes = @{getnodesimported()};            # import the nodes.dmp for later use at loading of the module
+my %names_by_taxid = %{getnamesimported()};   # import the names.dmp for later use at loading of the module
+my %merged_by_taxid = %{getmergedimported()}; # import the merged.dmp for later use at loading of the module
 
 #
 # Command: getLineagesbyGI( ref to list of gis )
@@ -144,18 +127,21 @@ sub check4gis(\%) {
 
     my %taxid_found_by_gi = ();
 
-    open(FH, "<".$TAXDIR."/gi_taxid.txt");
+    open(FH, "<".$TAXDIR."/gi_taxid.bin");
     binmode(FH);
 
-    my $bytesperline = 24;
+    my $data_format = "LL";
+
+    my $bytesperline = length(pack($data_format, (0,0)));
     my $tmp = "";
 
     foreach my $gi (keys %$gilist) {
 	my $bytepos = ($gi-1)*$bytesperline;
 	seek(FH, $bytepos, 0);
 	read(FH, $tmp, $bytesperline);
-	if (($tmp =~ /(\d+)\t\s*(\d+)/) && ($gi == $1)) {
-	    $taxid_found_by_gi{$gi} = int($2);
+	my ($dat_gi, $dat_taxid) = unpack($data_format, $tmp);
+	if ($dat_gi && $gi == $dat_gi) {
+	    $taxid_found_by_gi{$gi} = int($dat_taxid);
 	} else {
 	    my $output = qx(wget -q -O - 'http://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?tool=portal&db=nuccore&val=$gi&dopt=genbank&sendto=on&log$=seqview&extrafeat=976&maxplex=1');
 	    if ($? == 0) {
@@ -221,43 +207,22 @@ sub check4gis(\%) {
 }
 
 sub getnodesimported {
-    # I want to read the nodes.dmp
-    my @nodes = ();
-    open(FH, "<".$TAXDIR."/nodes.dmp");
-    while (<FH>) {
-	my @tmp = split(/\t\|\t/, $_ );
-	$nodes[$tmp[0]] = {ancestor => int($tmp[1]), rank => $tmp[2]};
-    }
-    close(FH);
+    my $nodes = retrieve($TAXDIR."/nodes.bin");
 
-    return @nodes;
+    return $nodes;
 }
 
 sub getnamesimported {
-    my %names_by_taxid = ();
-    open(FH, "<".$TAXDIR."/names.dmp");
-    while (<FH>) {
-        my @tmp = split(/\t\|\t/, $_ );
-	next if ($tmp[3] !~ /scientific name/);
-	print STDERR "Doppelbelegung von $tmp[0]" if (defined $names_by_taxid{$tmp[0]});
-        $names_by_taxid{$tmp[0]} = $tmp[1];
-    }
-    close(FH);
+    my $names_by_taxid = retrieve($TAXDIR."/names.bin");
 
-    return %names_by_taxid;
+    return $names_by_taxid;
 }
 
 sub getmergedimported {
-    my %merged_by_taxid = ();
-    open(FH, "<".$TAXDIR."/merged.dmp");
-    while (<FH>) {
-        my @tmp = split(/[\s\|]+/, $_ );
-	print STDERR "Doppelbelegung von $tmp[0]" if (defined $merged_by_taxid{$tmp[0]});
-        $merged_by_taxid{$tmp[0]} = $tmp[1];
-    }
-    close(FH);
 
-    return %merged_by_taxid;
+    my $merged_by_taxid = retrieve($TAXDIR."/merged.bin");
+    
+    return $merged_by_taxid;
 }
 
 sub checktaxid4merged ($) {
@@ -303,6 +268,12 @@ If you have a mailing list set up for your module, mention it here.
 
 If you have a web site set up for your module, mention it here.
 
+=head1 HISTORY
+
+version 0.60.0
+
+A new version which uses a binary file type for storing the gi and taxid information.
+
 =head1 AUTHOR
 
 Frank Foerster, E<lt>frf53jh@biozentrum.uni-wuerzburg.deE<gt>
@@ -317,13 +288,3 @@ at your option, any later version of Perl 5 you may have available.
 
 
 =cut
-
-
-perl -MDateTime::Format::Natural -e '
-     while (<>) {$a.=$_;} 
-     if ($a =~ /^COMMENT\s+\[WARNING\] On (.+) this sequence was replaced by.+gi:(\d+)\./msg) { 
-        print "$1\t$2\n";
-     } 
-     $parser = DateTime::Format::Natural->new;
-     $dt = $parser->parse_datetime($1);
-     print $dt;'
