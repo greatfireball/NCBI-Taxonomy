@@ -3,9 +3,7 @@
 
 #########################
 
-# change 'tests => 1' to 'tests => last_test_to_print';
-
-use Test::More tests => 2;
+use Test::More tests;
 BEGIN { use_ok('NCBI::Taxonomy') };
 
 #########################
@@ -13,4 +11,9 @@ BEGIN { use_ok('NCBI::Taxonomy') };
 
 ### testing for an existing subroutine
 
-can_ok('NCBI::Taxonomy', 'pairwiseLCA');
+foreach my $method (qw(getnodesimported getnamesimported getmergedimported getnewnodesimported))
+{
+	can_ok('NCBI::Taxonomy', $method);
+}
+
+done_testing();
