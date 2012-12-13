@@ -12,3 +12,5 @@ BEGIN { use_ok('NCBI::Taxonomy') };
 ### testing for an existing subroutine
 
 can_ok('NCBI::Taxonomy', 'pairwiseLCA');
+
+done_testing();
