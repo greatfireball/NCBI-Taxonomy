@@ -166,7 +166,7 @@ sub check4gis(\%) {
 	# check if the taxid is not present, but was already downloaded
 	if (exists $downloaded_gi_taxid{$gi})
 	{
-	    $logger->info("Found taxid for gi $gi already downloaded");
+	    $logger->debug("Found taxid for gi $gi already downloaded");
 	    $taxid_found_by_gi{$gi} = int($downloaded_gi_taxid{$gi});
 	} else {
 	    seek(FH, $bytepos, 0);
