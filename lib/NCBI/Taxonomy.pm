@@ -11,7 +11,7 @@ use Storable qw(retrieve);
 # version number and the revision. The main version number is located
 # at the globals module and can be accessed by the function
 # globals::getmainversionnumber()
-use version 0.77; my $mainversionnumber = "0.62"; '$Revision$' =~ /Revision:\s*(\d+)/; our $VERSION=version->declare($mainversionnumber.".".$1);
+use version 0.77; my $mainversionnumber = "0.63"; '$Revision$' =~ /Revision:\s*(\d+)/; our $VERSION=version->declare($mainversionnumber.".".$1);
 
 # for logging purposes we use the Log4perl module
 use Log::Log4perl;
@@ -293,6 +293,8 @@ sub checktaxid4merged ($) {
     }
 }
 
+
+
 1;
 
 # Below is stub documentation for your module. You'd better edit it!
@@ -344,6 +346,10 @@ Switched to Log::Log4perl for messages and added croak commands for failing IO c
 version 0.62.1854
 
 I am using a ring buffer to save 6000 lineages for taxids to speed up the finding of the lineages.
+
+version 0.63.*
+
+Implementation of a last common ancestor
 
 =head1 AUTHOR
 

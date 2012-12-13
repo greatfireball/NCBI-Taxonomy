@@ -3,4 +3,5 @@ Makefile.PL
 MANIFEST
 README
 t/NCBI-Taxonomy.t
+t/50_last_common_ancestor.t
 lib/NCBI/Taxonomy.pm
