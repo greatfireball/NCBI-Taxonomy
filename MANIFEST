@@ -2,6 +2,13 @@ Changes
 Makefile.PL
 MANIFEST
 README
-t/NCBI-Taxonomy.t
-t/50_last_common_ancestor.t
 lib/NCBI/Taxonomy.pm
+t/00_NCBI-Taxonomy.t
+t/10_getLineagesbyGI.t
+t/20_getTaxonomicRankbyGI.t
+t/30_check4gis.t
+t/40_getallranksusedbyNCBI.t
+t/50_pairwiseLCA.t
+t/60_testimportfunctions.t
+t/70_getLCAbyGIs.t
+t/80_getlineagebytaxid.t
