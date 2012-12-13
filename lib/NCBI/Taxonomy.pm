@@ -11,7 +11,7 @@ use Storable qw(retrieve);
 # version number and the revision. The main version number is located
 # at the globals module and can be accessed by the function
 # globals::getmainversionnumber()
-use version 0.77; my $mainversionnumber = "0.63"; '$Revision$' =~ /Revision:\s*(\d+)/; our $VERSION=version->declare($mainversionnumber.".".$1);
+use version 0.77; my $mainversionnumber = "0.64"; '$Revision$' =~ /Revision:\s*(\d+)/; our $VERSION=version->declare($mainversionnumber.".".$1);
 
 # for logging purposes we use the Log4perl module
 use Log::Log4perl;
@@ -326,19 +326,36 @@ sub pairwiseLCA {
 
 sub getLCAbyGIs
 {
-    my ($refgis, $threshold) = @_;
+    my ($refgis, $threshold, $min_lineages) = @_;
+
+    if ((! defined $min_lineages) || $min_lineages !~ /^\d+$/ || $min_lineages < 2)
+    {
+	$logger->info("No information about the minimum number of lineages was supplied or a non-number or a value less than 2... The parameter will be set to 2 as default!");
+	$min_lineages = 2;
+    }
 
     my $glh = getLineagesbyGI(@{$refgis});
+
+    my $lineages_found = 0+(keys %{$glh});
+
+    if ($lineages_found < $min_lineages)
+    {
+	$logger->info("Number of lineages resulting from GIs is to low (expected >= ", $min_lineages,", found: ", $lineages_found,"), therefore the LCA will be skipped");
+	# return an empty array reference
+	return [];
+    }
 
     my @pairwise_comparisons = ();
 
     my %splitcounthash = ();
 
-    foreach my $x (0..@{$refgis}-2)
+    my @gis_with_lineage = (keys %{$glh});
+
+    foreach my $x (0..@gis_with_lineage-2)
     {
-	foreach my $y ($x+1..@{$refgis}-1)
+	foreach my $y ($x+1..@gis_with_lineage-1)
 	{
-	    push(@pairwise_comparisons, NCBI::Taxonomy::pairwiseLCA($glh->{$refgis->[$x]}, $glh->{$refgis->[$y]}));
+	    push(@pairwise_comparisons, NCBI::Taxonomy::pairwiseLCA($glh->{$gis_with_lineage[$x]}, $glh->{$gis_with_lineage[$y]}));
 	}
     }
 
@@ -483,6 +500,12 @@ Implementation of a last common ancestor
 0.63.1863 
 
 Include last common ancestor calculations now
+
+0.64.1868
+
+Fixed the LCA on request of Felix... A new parameter was added and an
+empty result array reference will be returned, if less than 2 lineages
+are compared.
 
 =head1 AUTHOR
 

@@ -54,3 +54,9 @@ Revision history for Perl extension NCBI::Taxonomy.
 0.63.1863 
 
 	- include last common ancestor calculations now
+
+0.64.1868
+
+	- Fixed the LCA on request of Felix... A new parameter was
+          added and an empty result array reference will be returned,
+          if less than 2 lineages are compared.
