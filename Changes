@@ -50,3 +50,7 @@ Revision history for Perl extension NCBI::Taxonomy.
 0.52 2010-05-03T17:43:00+02:00
 
         - added a handler for download errors caused by NCBI requests
+
+0.63.1863 
+
+	- include last common ancestor calculations now

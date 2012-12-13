@@ -29,10 +29,12 @@ my $taxdatabase = $TAXDIR."/gi_taxid.bin";
 my $taxnodesdatabase = $TAXDIR."/nodes.bin";
 my $taxnamesdatabase = $TAXDIR."/names.bin";
 my $taxmergeddatabase = $TAXDIR."/merged.bin";
+my $newnodesdatabase = $TAXDIR."/newnodes.bin";
 
 my @nodes = @{getnodesimported()};            # import the nodes.dmp for later use at loading of the module
 my %names_by_taxid = %{getnamesimported()};   # import the names.dmp for later use at loading of the module
 my %merged_by_taxid = %{getmergedimported()}; # import the merged.dmp for later use at loading of the module
+my $nodesnew = getnewnodesimported();         # import the complete node information as newnodes
 
 my %downloaded_gi_taxid = ();
 
@@ -293,7 +295,134 @@ sub checktaxid4merged ($) {
     }
 }
 
+sub pairwiseLCA {
 
+    my ($lineageA, $lineageB) = @_;
+
+    my $len_A = @{$lineageA};
+
+    my $index = $len_A-1;
+
+    my @lcalineage = ();
+
+    my %taxidsB = ();
+
+    foreach my $taxon (@{$lineageB})
+    {
+	$taxidsB{$taxon->{taxid}}++;
+    }
+
+    while (exists $taxidsB{$lineageA->[$index]{taxid}} && $index > 0)
+    {
+	push(@lcalineage, $lineageA->[$index]);
+	$index--;
+    }
+
+    return [reverse @lcalineage];
+    
+}
+
+# my $result = NCBI::Taxonomy::getLCAbyGIs(\@gis, 0.5);
+
+sub getLCAbyGIs
+{
+    my ($refgis, $threshold) = @_;
+
+    my $glh = getLineagesbyGI(@{$refgis});
+
+    my @pairwise_comparisons = ();
+
+    my %splitcounthash = ();
+
+    foreach my $x (0..@{$refgis}-2)
+    {
+	foreach my $y ($x+1..@{$refgis}-1)
+	{
+	    push(@pairwise_comparisons, NCBI::Taxonomy::pairwiseLCA($glh->{$refgis->[$x]}, $glh->{$refgis->[$y]}));
+	}
+    }
+
+    foreach my $act_comparison (@pairwise_comparisons)
+    {
+	
+	foreach (@{$act_comparison})
+	{
+	    $splitcounthash{$_->{taxid}}++;
+	}
+    }
+
+    my $thresholdcount = $threshold*(scalar @pairwise_comparisons);
+
+    my @sorted_taxids = sort {$splitcounthash{$a} <=> $splitcounthash{$b}} grep {$splitcounthash{$_} >= $thresholdcount} (keys %splitcounthash);
+
+    # get the count number
+    my $min_ge_thresholdcount = $splitcounthash{$sorted_taxids[0]};
+
+    # extract only taxids with same count value!!!
+    @sorted_taxids = grep {$splitcounthash{$_} == $min_ge_thresholdcount} @sorted_taxids;
+
+    $logger->debug("Found ", (scalar @sorted_taxids), " splits with the same count ($min_ge_thresholdcount)");
+    $logger->debug("Taxids with same counts are: ", join(", ", @sorted_taxids));
+
+    my $out = [];
+
+    foreach my $taxid (@sorted_taxids)
+    {
+	push(@{$out}, getlineagebytaxid($taxid));
+    }
+
+    # sort the out array by the lineage length (shortest first)
+    @{$out} = sort {0+@{$a} <=> 0+@{$b}} @{$out};
+
+    # test if the shorter taxids are occuring within longer taxonomies
+    my %discarded = ();
+
+    my $num_out = 0+@{$out};
+    foreach my $act_lineage (0..$num_out-2)
+    {
+	my $taxid2find = $out->[$act_lineage][0]{taxid};
+	foreach my $compare_lineage ($act_lineage+1..$num_out-1)
+	{
+	    if (grep {($taxid2find == $_->{taxid})} @{$out->[$compare_lineage]})
+	    {
+		$logger->debug("Discarding lineage");
+		$discarded{$act_lineage}++;
+		last;
+	    }
+	}	
+    }
+
+    my @final = map {$out->[$_]} grep { ! exists $discarded{$_} } (0..$num_out-1);
+
+    $logger->debug("Finally the number of lineages for output is ", scalar @final);
+
+    return \@final;
+
+}
+
+sub getlineagebytaxid {
+    my ($taxid) = @_;
+    
+    my $out = [];
+    my $act_id = $taxid;
+
+    while ($nodesnew->[$act_id]{ancestor}!=$act_id)
+    {
+	push(@{$out}, $nodesnew->[$act_id]); 
+	$act_id=$nodesnew->[$act_id]{ancestor}
+    }
+
+    # add the last looping node
+    push(@{$out}, $nodesnew->[$act_id]); 
+    
+    return $out;
+}
+
+sub getnewnodesimported {
+    my $nodesnew = retrieve($newnodesdatabase)  || $logger->logcroak("Unable to read new nodes database from '$newnodesdatabase'");
+    
+    return $nodesnew;
+}
 
 1;
 
@@ -350,6 +479,10 @@ I am using a ring buffer to save 6000 lineages for taxids to speed up the findin
 version 0.63.*
 
 Implementation of a last common ancestor
+
+0.63.1863 
+
+Include last common ancestor calculations now
 
 =head1 AUTHOR
 
