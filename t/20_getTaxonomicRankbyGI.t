@@ -3,7 +3,7 @@
 
 #########################
 
-use Test::More tests;
+use Test::More;
 BEGIN { use_ok('NCBI::Taxonomy') };
 
 #########################
