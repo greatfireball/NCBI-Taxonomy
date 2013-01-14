@@ -306,7 +306,8 @@ sub getmergedimported {
     return $merged_by_taxid;
 }
 
-sub checktaxid4merged ($) {
+sub checktaxid4merged 
+{
     my ($taxid) = @_;
     if (defined $taxid && exists $merged_by_taxid{$taxid})
     {
