@@ -7,11 +7,8 @@ use DateTime::Format::Natural;
 
 use Storable qw(retrieve nstore);
 
-# second we generate a version number depending on the current main
-# version number and the revision. The main version number is located
-# at the globals module and can be accessed by the function
-# globals::getmainversionnumber()
-use version 0.77; my $mainversionnumber = "0.64"; '$Revision$' =~ /Revision:\s*(\d+)/; our $VERSION=version->declare($mainversionnumber.".".$1);
+use version 0.77;
+our $VERSION=version->declare("0.70.1");
 
 # for logging purposes we use the Log4perl module
 use Log::Log4perl;
