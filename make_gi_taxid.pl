@@ -16,6 +16,9 @@ my $gi_taxid_nucl = "gi_taxid_nucl.dmp";
 my $gi_taxid_prot = "gi_taxid_prot.dmp";
 my $outfile = "gi_taxid.bin";
 
+my $ranksfileout = "ranks.bin";
+my $nodesfileout = "nodes.bin";
+
 my $overwrite = 0;
 
 my $getopt_result = GetOptions(
@@ -152,9 +155,49 @@ close(OF) || $logger->logdie("Unable to close the outputfile '$outfile' after wr
 close(NF) || $logger->logdie("Unable to close the nucleotid input file '$gi_taxid_nucl'");
 close(PF) || $logger->logdie("Unable to close the protein input file '$gi_taxid_prot'");
 
-getmergedimported();
-getnamesimported();
-getnodesimported();
+$logger->info("Starting import of information about merged taxids");
+my $merged = getmergedimported();
+$logger->info("Finished import of information about merged taxids");
+
+$logger->info("Starting import of information about names for taxids");
+my $names = getnamesimported();
+$logger->info("Finished import of information about names for taxids");
+
+$logger->info("Starting import of information about nodes for taxids");
+my ($nodes, $ranks) = getnodesimported();
+$logger->info("Finished import of information about nodes for taxids");
+
+$logger->info("Starting extraction and storage of used ranks");
+my @ranks_used = keys %{$ranks};
+nstore(\@ranks_used, $ranksfileout) || $logger->logdie("Unable to store information about the used ranks in file '$ranksfileout'");
+$logger->info("Finished extraction and storage of used ranks");
+
+$logger->info("Starting combining node and names information");
+foreach my $act_taxid (0..@{$nodes}-1)
+{
+    if (ref $nodes->[$act_taxid])
+    {
+	$nodes->[$act_taxid]->{sciname} = $names->{$act_taxid};
+	$nodes->[$act_taxid]->{taxid} = $act_taxid;
+    }
+}
+$logger->info("Finished combining node and names information");
+
+$logger->info("Started adding merged taxid information");
+foreach my $merged_taxid (keys %{$merged})
+{
+    $nodes->[$merged_taxid]->{merged_with} = $merged->{$merged_taxid};
+    $nodes->[$merged_taxid]->{taxid} = $merged_taxid;
+    foreach (qw(ancestor rank sciname))
+    {
+	$nodes->[$merged_taxid]->{$_} = $nodes->[$nodes->[$merged_taxid]->{merged_with}]->{$_};
+    }
+}
+$logger->info("Finished adding merged taxid information");
+
+$logger->info("Started storing node information in binary format");
+nstore($nodes, $nodesfileout) || $logger->logdie("Unable to store node information in file '$nodesfileout'");
+$logger->info("Finished storing node information in binary format");
 
 $logger->info("Update process finished");
 
@@ -165,30 +208,28 @@ use Storable qw(nstore);
 sub getnodesimported {
     # I want to read the nodes.dmp
     my $nodesfileinput = "nodes.dmp";
-    my $nodesfileout = "nodes.bin";
 
     $logger->info("Started import of nodes.dmp from file '$nodesfileinput'");
 
     my @nodes = ();
+    my %ranks = ();
     open(FH, "<", $nodesfileinput) || $logger->logdie("Unable to open file '$nodesfileinput'"); 
     while (<FH>) {
 	my @tmp = split(/\t\|\t/, $_ );
 	$nodes[$tmp[0]] = {ancestor => int($tmp[1]), rank => $tmp[2]};
+	$ranks{$tmp[2]}++;
     }
     close(FH) || $logger->logdie("Unable to close file '$nodesfileinput'"); 
 
-    nstore(\@nodes, $nodesfileout) || $logger->logdie("Unable to store node information in file '$nodesfileout'");
-
     $logger->info("Finished import of nodes.dmp from file '$nodesfileinput'");
 
-    return;
+    return \@nodes, \%ranks;
 }
 
 
 sub getnamesimported {
     # I want to read the names.dmp
     my $namesfileinput = "names.dmp";
-    my $namesfileout = "names.bin";
 
     $logger->info("Started import of names.dmp from file '$namesfileinput'");
 
@@ -202,17 +243,14 @@ sub getnamesimported {
     }
     close(FH) || $logger->logdie("Unable to close file '$namesfileinput'"); 
 
-    nstore(\%names_by_taxid, $namesfileout) || $logger->logdie("Unable to store name information in file '$namesfileout'");
-
     $logger->info("Finished import of names.dmp from file '$namesfileinput'");
 
-    return;
+    return \%names_by_taxid;
 }
 
 sub getmergedimported {
     # I want to read the merged.dmp
     my $mergedfileinput = "merged.dmp";
-    my $mergedfileout = "merged.bin";
 
     $logger->info("Started import of merged.dmp from file '$mergedfileinput'");
 
@@ -225,11 +263,9 @@ sub getmergedimported {
     }
     close(FH) || $logger->logdie("Unable to close file '$mergedfileinput'"); 
 
-    nstore(\%merged_by_taxid, $mergedfileout) || $logger->logdie("Unable to store merge information in file '$mergedfileout'");
-
     $logger->info("Finished import of merged.dmp from file '$mergedfileinput'");
 
-    return;
+    return \%merged_by_taxid;
 }
 
 

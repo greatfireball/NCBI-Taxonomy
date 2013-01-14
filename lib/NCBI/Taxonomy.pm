@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use DateTime::Format::Natural;
 
-use Storable qw(retrieve);
+use Storable qw(retrieve nstore);
 
 # second we generate a version number depending on the current main
 # version number and the revision. The main version number is located
@@ -31,10 +31,34 @@ my $taxnamesdatabase = $TAXDIR."/names.bin";
 my $taxmergeddatabase = $TAXDIR."/merged.bin";
 my $newnodesdatabase = $TAXDIR."/newnodes.bin";
 
-my @nodes = @{getnodesimported()};            # import the nodes.dmp for later use at loading of the module
-my %names_by_taxid = %{getnamesimported()};   # import the names.dmp for later use at loading of the module
-my %merged_by_taxid = %{getmergedimported()}; # import the merged.dmp for later use at loading of the module
+our @nodes = @{getnodesimported()};            # import the nodes.dmp for later use at loading of the module
+our %names_by_taxid = %{getnamesimported()};   # import the names.dmp for later use at loading of the module
+our %merged_by_taxid = %{getmergedimported()}; # import the merged.dmp for later use at loading of the module
 my $nodesnew = getnewnodesimported();         # import the complete node information as newnodes
+
+foreach (0..@nodes-1)
+{
+    if (ref $nodes[$_])
+    {
+	$nodes[$_]->{sciname} = $names_by_taxid{$_};
+	$nodes[$_]->{taxid} = $_;
+    }
+}
+
+foreach my $merged_taxid (keys %merged_by_taxid)
+{
+	if (checktaxid4merged($merged_taxid) != $merged_taxid)
+	{
+	    $nodes[$merged_taxid]->{merged_with} = checktaxid4merged($merged_taxid);
+	    $nodes[$merged_taxid]->{taxid} = $merged_taxid;
+	    foreach (qw(ancestor rank sciname))
+	    {
+		$nodes[$merged_taxid]->{$_} = $nodes[$nodes[$merged_taxid]->{merged_with}]->{$_};
+	    }
+	}
+}
+
+nstore(\@nodes, '/tmp/bla.bin');
 
 my %downloaded_gi_taxid = ();
 
