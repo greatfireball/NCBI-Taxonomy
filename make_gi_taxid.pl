@@ -76,7 +76,7 @@ my $out = "";
 while ($run)
 {
     # check if we have to read a new line from nucleotide input
-    if (! $nucl_line)
+    if (! $nucl_line && ! eof(NF))
     {
 	$nucl_line = <NF>;
 	$nucl_line_number++ if ($nucl_line);
@@ -95,7 +95,7 @@ while ($run)
     }
 
     # check if we have to read a new line from protein input
-    if (! $prot_line)
+    if (! $prot_line && ! eof(PF))
     {
 	$prot_line = <PF>;
 	$prot_line_number++ if ($prot_line);
@@ -122,11 +122,11 @@ while ($run)
     # check if the current line in output is valid for one of the two input lines meaning the same as the gi!!!
     my $output_string = $empty_line;
 
-    if ($output_line == $n_gi-1)
+    if (defined $n_gi && $output_line == $n_gi-1)
     {
 	$output_string = pack($data_format, ($n_gi, $n_taxid));
 	($nucl_line, $n_gi, $n_taxid) = (undef, undef, undef);
-    } elsif ($output_line == $p_gi-1)
+    } elsif (defined $p_gi && $output_line == $p_gi-1)
     {
 	$output_string = pack($data_format, ($p_gi, $p_taxid));
 	($prot_line, $p_gi, $p_taxid) = (undef, undef, undef);
