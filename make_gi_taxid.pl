@@ -18,11 +18,15 @@ my $outfile = "gi_taxid.bin";
 
 my $overwrite = 0;
 
+# this is used to store temporary data of the gi2taxid file
+my $maxbufferlength = 500*1024*1024;
+
 my $getopt_result = GetOptions(
     'nucl=s' => \$gi_taxid_nucl,
     'prot=s' => \$gi_taxid_prot,
     'output=s' => \$outfile,
-    'overwrite!' => \$overwrite
+    'overwrite!' => \$overwrite,
+    'maxbufferlength=i' => \$maxbufferlength
     );
 
 ### Get a logger
@@ -134,6 +138,18 @@ while ($run)
 
     $out .= $output_string;
     $output_line++;
+
+    # check if we are using more than $maxbufferlength of output
+    # puffer. If so, store the buffer onto the disk and clear the
+    # buffer!
+    if (length($out) > $maxbufferlength)
+    {
+	$logger->info("Buffer filled with more than $maxbufferlength. Therefore, writing buffer to disk is initiated...");
+	print OF $out;
+	$out = "";
+	$logger->info("Buffer writing/clearing finished.");
+    }
+
     if ($output_line%$linenumberreport == 0)
     {
 	$logger->info("Wrote output line $output_line to file");
@@ -143,9 +159,9 @@ while ($run)
     $run = ! (eof(NF) && eof(PF));
 }
 
-$logger->info("Writing to output file started...");
+$logger->info("Writing rest of buffer to output file started...");
 print OF $out;
-$logger->info("Writing to output file finished");
+$logger->info("Writing rest of buffer to output file finished");
 
 # try to close all files
 close(OF) || $logger->logdie("Unable to close the outputfile '$outfile' after writing");
