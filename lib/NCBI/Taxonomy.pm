@@ -8,7 +8,7 @@ use DateTime::Format::Natural;
 use Storable qw(retrieve nstore);
 
 use version 0.77;
-our $VERSION=version->declare("0.70.1");
+our $VERSION=version->declare("0.70.2");
 
 # for logging purposes we use the Log4perl module
 use Log::Log4perl;

@@ -2,6 +2,7 @@ Changes
 Makefile.PL
 MANIFEST
 README
+make_gi_taxid.pl
 lib/NCBI/Taxonomy.pm
 t/00_NCBI-Taxonomy.t
 t/10_getLineagesbyGI.t
