@@ -11,7 +11,7 @@ BEGIN { use_ok('NCBI::Taxonomy') };
 
 ### testing for an existing subroutine
 
-foreach my $method (qw(getnodesimported getnamesimported getmergedimported getnewnodesimported))
+foreach my $method (qw(getnewnodesimported))
 {
 	can_ok('NCBI::Taxonomy', $method);
 }
