@@ -29,7 +29,7 @@ my $getopt_result = GetOptions(
     'prot=s' => \$gi_taxid_prot,
     'output=s' => \$outfile,
     'overwrite!' => \$overwrite,
-    'download' => \$download,
+    'download!' => \$download,
     );
 
 ### Get a logger
@@ -40,20 +40,30 @@ $logger->info("Started update process...");
 # should I download the files?
 if ($download)
 {
+    require File::Basename;
+
     foreach my $file (@files2download)
     {
-	my $cmd = "wget '$file' | ";
+	my $basename = File::Basename::basename($file, (".gz", ".tar.gz"));
+
+	# does the file exist?
+	if (-e "$basename")
+	{
+	    # remove the file
+	    unlink($basename) || $logger->logdie("Unable to delete file '$basename'");
+	}
+
+	my $cmd = "wget -O - '$file' 2>/dev/null";
 	if ($file =~ /.tar.gz$/)
 	{
 	    $cmd .= "| tar xzf -";
 	} elsif ($file =~ /.gz$/)
 	{
-	    require File::Basename;
-	    my$basename = basename($file);
 	    $cmd .= "| gunzip > $basename";
 	}
-	    
+	$logger->info("Running command '$cmd'...");
 	qx($cmd);
+	$logger->info("Running command '$cmd' finished.");
     }
 }
 
