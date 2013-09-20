@@ -8,7 +8,7 @@ use DateTime::Format::Natural;
 use Storable qw(retrieve nstore);
 
 use version 0.77;
-our $VERSION=version->declare("0.70.2");
+our $VERSION=version->declare("0.70.3");
 
 # for logging purposes we use the Log4perl module
 use Log::Log4perl;
@@ -21,41 +21,11 @@ my $logger = Log::Log4perl->get_logger();
 
 $logger->debug("Loaded the module NCBI::Taxonomy.pm (file ".__FILE__.", version: $VERSION)");
 
-my $TAXDIR = '/bio/data/NCBI/taxonomy/';   # where are the taxonomy-files stored
+my $TAXDIR = '/storage/frf53jh/ncbi-taxonomy/';   # where are the taxonomy-files stored
 my $taxdatabase = $TAXDIR."/gi_taxid.bin";
 my $taxnodesdatabase = $TAXDIR."/nodes.bin";
-my $taxnamesdatabase = $TAXDIR."/names.bin";
-my $taxmergeddatabase = $TAXDIR."/merged.bin";
-my $newnodesdatabase = $TAXDIR."/newnodes.bin";
 
-our @nodes = @{getnodesimported()};            # import the nodes.dmp for later use at loading of the module
-our %names_by_taxid = %{getnamesimported()};   # import the names.dmp for later use at loading of the module
-our %merged_by_taxid = %{getmergedimported()}; # import the merged.dmp for later use at loading of the module
-my $nodesnew = getnewnodesimported();         # import the complete node information as newnodes
-
-foreach (0..@nodes-1)
-{
-    if (ref $nodes[$_])
-    {
-	$nodes[$_]->{sciname} = $names_by_taxid{$_};
-	$nodes[$_]->{taxid} = $_;
-    }
-}
-
-foreach my $merged_taxid (keys %merged_by_taxid)
-{
-	if (checktaxid4merged($merged_taxid) != $merged_taxid)
-	{
-	    $nodes[$merged_taxid]->{merged_with} = checktaxid4merged($merged_taxid);
-	    $nodes[$merged_taxid]->{taxid} = $merged_taxid;
-	    foreach (qw(ancestor rank sciname))
-	    {
-		$nodes[$merged_taxid]->{$_} = $nodes[$nodes[$merged_taxid]->{merged_with}]->{$_};
-	    }
-	}
-}
-
-nstore(\@nodes, '/tmp/bla.bin');
+my $nodes = getnewnodesimported();         # import the complete node information as newnodes
 
 my %downloaded_gi_taxid = ();
 
@@ -241,15 +211,15 @@ sub check4gis(\%) {
 	} else {
 	    my $taxid4ringbuffer = $taxid;
 	    while () {
-		push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes[$taxid]->{rank}});
-		$taxid = checktaxid4merged($nodes[$taxid]->{ancestor});
+		push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes->[$taxid]->{rank}});
+		$taxid = checktaxid4merged($nodes->[$taxid]->{ancestor});
 		if (!defined $taxid) {
 		    $logger->error("Error $gi gives undefined TaxID");
 		    delete $Lineage_by_gi{$gi};
 		    last;
 		}
 		if ($taxid == 1) {
-		    push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes[$taxid]->{rank}}); 
+		    push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes->[$taxid]->{rank}}); 
 		    # check if the ringbuffer is filled completely
 		    if (@ring_buffer >= $max_ring_buffer_size)
 		    {
@@ -271,47 +241,16 @@ sub check4gis(\%) {
 	}
     }
 
-    # mapping was done, last step is adding the names to every taxid
-    # first step is to get a list of all needed taxids - names
-    my %taxidnamesneeded = ();
-    foreach my $gi (keys %Lineage_by_gi) {
-	foreach (@{$Lineage_by_gi{$gi}}) { $taxidnamesneeded{$_->{taxid}}++ }
-    }
-
-    # last step is to add the scientific names to the lineage
-    foreach my $gi (keys %Lineage_by_gi) {
-	foreach (@{$Lineage_by_gi{$gi}}) { $_->{sciname} = $names_by_taxid{$_->{taxid}}; }
-    }
-
     return \%Lineage_by_gi;
 
-}
-
-sub getnodesimported {
-    my $nodes = retrieve($taxnodesdatabase) || $logger->logcroak("Unable to read taxonomic nodes database from '$taxnodesdatabase'");
-
-    return $nodes;
-}
-
-sub getnamesimported {
-    my $names_by_taxid = retrieve($taxnamesdatabase)  || $logger->logcroak("Unable to read taxonomic names database from '$taxnamesdatabase'");
-
-    return $names_by_taxid;
-}
-
-sub getmergedimported {
-
-    my $merged_by_taxid = retrieve($taxmergeddatabase)  || $logger->logcroak("Unable to read merging database from '$taxmergeddatabase'");
-    
-    return $merged_by_taxid;
 }
 
 sub checktaxid4merged 
 {
     my ($taxid) = @_;
-    if (defined $taxid && exists $merged_by_taxid{$taxid})
+    if (defined $taxid && exists $nodes->[$taxid]->{merged_with})
     {
-	return $merged_by_taxid{$taxid};
+	return checktaxid4merged($nodes->[$taxid]->{merged_with});
     } else {
 	return $taxid;
     }
@@ -445,22 +384,22 @@ sub getlineagebytaxid {
     my $out = [];
     my $act_id = $taxid;
 
-    while ($nodesnew->[$act_id]{ancestor}!=$act_id)
+    while ($nodes->[$act_id]{ancestor}!=$act_id)
     {
-	push(@{$out}, $nodesnew->[$act_id]); 
-	$act_id=$nodesnew->[$act_id]{ancestor}
+	push(@{$out}, $nodes->[$act_id]); 
+	$act_id=$nodes->[$act_id]{ancestor}
     }
 
     # add the last looping node
-    push(@{$out}, $nodesnew->[$act_id]); 
+    push(@{$out}, $nodes->[$act_id]); 
     
     return $out;
 }
 
 sub getnewnodesimported {
-    my $nodesnew = retrieve($newnodesdatabase)  || $logger->logcroak("Unable to read new nodes database from '$newnodesdatabase'");
+    my $nodes = retrieve($taxnodesdatabase)  || $logger->logcroak("Unable to read new nodes database from '$taxnodesdatabase'");
     
-    return $nodesnew;
+    return $nodes;
 }
 
 1;
@@ -528,6 +467,11 @@ Include last common ancestor calculations now
 Fixed the LCA on request of Felix... A new parameter was added and an
 empty result array reference will be returned, if less than 2 lineages
 are compared.
+
+0.70.3
+
+Included the new format for the nodes and removed the subroutines
+which were necessary for the import of the dmp files.
 
 =head1 AUTHOR
 
