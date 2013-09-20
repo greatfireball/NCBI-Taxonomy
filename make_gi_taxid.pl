@@ -19,19 +19,43 @@ my $outfile = "gi_taxid.bin";
 my $ranksfileout = "ranks.bin";
 my $nodesfileout = "nodes.bin";
 
+my @files2download = qw(ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/gi_taxid_nucl.dmp.gz ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/gi_taxid_prot.dmp.gz ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxcat.tar.gz ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz);
+
 my $overwrite = 0;
+my $download = 1;
 
 my $getopt_result = GetOptions(
     'nucl=s' => \$gi_taxid_nucl,
     'prot=s' => \$gi_taxid_prot,
     'output=s' => \$outfile,
-    'overwrite!' => \$overwrite
+    'overwrite!' => \$overwrite,
+    'download' => \$download,
     );
 
 ### Get a logger
 my $logger = get_logger();
 
 $logger->info("Started update process...");
+
+# should I download the files?
+if ($download)
+{
+    foreach my $file (@files2download)
+    {
+	my $cmd = "wget '$file' | ";
+	if ($file =~ /.tar.gz$/)
+	{
+	    $cmd .= "| tar xzf -";
+	} elsif ($file =~ /.gz$/)
+	{
+	    require File::Basename;
+	    my$basename = basename($file);
+	    $cmd .= "| gunzip > $basename";
+	}
+	    
+	qx($cmd);
+    }
+}
 
 # check if the output file exists
 if (-e $outfile && $overwrite != 1)
