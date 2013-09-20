@@ -63,7 +63,7 @@ my $data_format = "LL";   ## this means I will store 2 32-bit values!
 my $empty_line = pack($data_format, (0,0));
 my $data_line_length = length($empty_line);
 
-my $run = 0;
+my $run = 1;
 
 my $nucl_line = undef;
 my $prot_line = undef;
