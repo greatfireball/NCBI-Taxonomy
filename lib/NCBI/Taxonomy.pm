@@ -21,7 +21,7 @@ my $logger = Log::Log4perl->get_logger();
 
 $logger->debug("Loaded the module NCBI::Taxonomy.pm (file ".__FILE__.", version: $VERSION)");
 
-my $TAXDIR = '/storage/frf53jh/ncbi-taxonomy/';   # where are the taxonomy-files stored
+my $TAXDIR = './t/data/';   # where are the taxonomy-files stored
 my $taxdatabase = $TAXDIR."/gi_taxid.bin";
 my $taxnodesdatabase = $TAXDIR."/nodes.bin";
 
