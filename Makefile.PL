@@ -8,7 +8,7 @@ WriteMakefile(
     PREREQ_PM         => {
 	DateTime::Format::Natural => 0.96,
 	version => 0.77,
-	Log::Log4perl => 1.31,
+	Log::Log4perl => 1.29,
     }, 
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'lib/NCBI/Taxonomy.pm', # retrieve abstract from module
