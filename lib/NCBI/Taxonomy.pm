@@ -32,7 +32,7 @@ if (-e $taxnodesdatabase)
 } else 
 {
     # the nodes DB was not found
-    warn "Unable to find the file '$taxnodesdatabase'";
+    $logger->debug("Unable to find the file '$taxnodesdatabase'");
 }
 
 my %downloaded_gi_taxid = ();
