@@ -16,7 +16,7 @@ my $folder = "./t/data/";
 
 chdir($folder) || die "Unable to change to folder '$folder'\n";
 
-my $cmd = "perl ../../make_gi_taxid.pl --no-download --overwrite";
+my $cmd = "perl ../../make_gi_taxid.pl --no-download --overwrite --quiet";
 
 system($cmd);
 

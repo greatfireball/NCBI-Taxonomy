@@ -24,13 +24,23 @@ my @files2download = qw(ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/gi_taxid_nucl.dm
 my $overwrite = 0;
 my $download = 1;
 
+my $quiet = 0;
+
 my $getopt_result = GetOptions(
     'nucl=s' => \$gi_taxid_nucl,
     'prot=s' => \$gi_taxid_prot,
     'output=s' => \$outfile,
     'overwrite!' => \$overwrite,
     'download!' => \$download,
+    'quiet'     => \$quiet,
     );
+
+### check if quiet is requested
+if ($quiet != 0)
+{
+    # set the logger to FATALs only
+    Log::Log4perl->easy_init($FATAL);
+}
 
 ### Get a logger
 my $logger = get_logger();
