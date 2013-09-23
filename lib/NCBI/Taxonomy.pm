@@ -25,7 +25,15 @@ my $TAXDIR = '/storage/frf53jh/ncbi-taxonomy/';   # where are the taxonomy-files
 my $taxdatabase = $TAXDIR."/gi_taxid.bin";
 my $taxnodesdatabase = $TAXDIR."/nodes.bin";
 
-my $nodes = getnewnodesimported();         # import the complete node information as newnodes
+my $nodes;
+if (-e $taxnodesdatabase)
+{
+    $nodes = getnewnodesimported();         # import the complete node information as newnodes
+} else 
+{
+    # the nodes DB was not found
+    warn "Unable to find the file '$taxnodesdatabase'";
+}
 
 my %downloaded_gi_taxid = ();
 
@@ -472,6 +480,11 @@ are compared.
 
 Included the new format for the nodes and removed the subroutines
 which were necessary for the import of the dmp files.
+
+0.70.5
+
+Added data for creation of a DB and therefore enabling test functionality.
+
 
 =head1 AUTHOR
 
