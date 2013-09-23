@@ -4,6 +4,13 @@
 #########################
 
 use Test::More;
-BEGIN { use_ok('NCBI::Taxonomy') };
+
+## empty all old database files from data folder
+foreach my $file (glob "./t/data/*.bin")
+{
+	unlink($file) || die "Unable to delete file '$file'\n";
+}
+
+use_ok('NCBI::Taxonomy');
 
 done_testing();
