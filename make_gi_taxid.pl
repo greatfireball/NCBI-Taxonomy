@@ -118,10 +118,10 @@ while ($run)
 	$nucl_line = <NF>;
 	$nucl_line_number++ if ($nucl_line);
 
-	if ($nucl_line =~ /^(\d+)\t(\d+)/)
+	if (defined $nucl_line && $nucl_line =~ /^(\d+)\t(\d+)/)
 	{ 
 	    ($n_gi, $n_taxid) = ($1, $2);
-	} else {
+	} elsif (defined $nucl_line) {
 	    $logger->error("Error on parsing line $nucl_line_number from nucleotide input file");
 	}
 
@@ -137,10 +137,10 @@ while ($run)
 	$prot_line = <PF>;
 	$prot_line_number++ if ($prot_line);
 
-	if ($prot_line =~ /^(\d+)\t(\d+)/)
+	if (defined $prot_line && $prot_line =~ /^(\d+)\t(\d+)/)
 	{ 
 	    ($p_gi, $p_taxid) = ($1, $2);
-	} else {
+	} elsif (defined $prot_line) {
 	    $logger->error("Error on parsing line $prot_line_number from protein input file");
 	}
 
@@ -250,6 +250,12 @@ sub getnodesimported {
     open(FH, "<", $nodesfileinput) || $logger->logdie("Unable to open file '$nodesfileinput'"); 
     while (<FH>) {
 	my @tmp = split(/\t\|\t/, $_ );
+	unless (defined $tmp[0] && defined $tmp[1] && defined $tmp[2])
+	{
+	    # skip the line if the elements 0..2 in @tmp are not defined!
+	    $logger->debug("Found undefined values for the line '$_'");
+	    next;
+	}
 	$nodes[$tmp[0]] = {ancestor => int($tmp[1]), rank => $tmp[2]};
 	$ranks{$tmp[2]}++;
     }
