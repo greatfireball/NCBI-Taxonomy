@@ -392,15 +392,12 @@ sub getlineagebytaxid {
     my $out = [];
     my $act_id = $taxid;
 
-    while ($nodes->[$act_id]{ancestor}!=$act_id)
+    do 
     {
 	push(@{$out}, $nodes->[$act_id]); 
 	$act_id=$nodes->[$act_id]{ancestor}
-    }
+    } until ($nodes->[$act_id]{ancestor}!=$act_id)
 
-    # add the last looping node
-    push(@{$out}, $nodes->[$act_id]); 
-    
     return $out;
 }
 
