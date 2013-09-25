@@ -396,7 +396,7 @@ sub getlineagebytaxid {
     {
 	push(@{$out}, $nodes->[$act_id]); 
 	$act_id=$nodes->[$act_id]{ancestor}
-    } until ($nodes->[$act_id]{ancestor}!=$act_id)
+    } until ($nodes->[$act_id]{ancestor}!=$act_id);
 
     return $out;
 }
