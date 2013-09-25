@@ -25,6 +25,10 @@ my $TAXDIR = './t/data/';   # where are the taxonomy-files stored
 my $taxdatabase = $TAXDIR."/gi_taxid.bin";
 my $taxnodesdatabase = $TAXDIR."/nodes.bin";
 
+### the following lines are needed for the format of the gi2taxid binary file
+my $data_format = "LL";
+my $bytesperline = length(pack($data_format, (0,0)));
+
 my $nodes;
 if (-e $taxnodesdatabase)
 {
@@ -146,20 +150,17 @@ sub getallranksusedbyNCBI {
 	    "superfamily","superkingdom","superorder","superphylum","tribe","varietas");
 }
 
-sub check4gis(\%) {
+sub get_taxid_from_gilist {
     my ($gilist) = @_;
 
     my %taxid_found_by_gi = ();
 
     open(FH, "<", $taxdatabase) || $logger->logdie("Unable to open taxonomic database at '$taxdatabase'");
     binmode(FH);
-
-    my $data_format = "LL";
-
-    my $bytesperline = length(pack($data_format, (0,0)));
+    
     my $tmp = "";
-
-    foreach my $gi (keys %$gilist) {
+    
+    foreach my $gi (@{$gilist}) {
 	my $bytepos = ($gi-1)*$bytesperline;
 	
 	# check if the taxid is not present, but was already downloaded
@@ -199,13 +200,22 @@ sub check4gis(\%) {
 	    }
 	}
     }
-
+    
     close(FH) || logger->logdie("Unable to close taxonomic database at '$taxdatabase'");
+
+    return \%taxid_found_by_gi;
+}
+
+sub check4gis(\%) {
+    my ($gilist) = @_;
+
+    my $taxid_found_by_gi = get_taxid_from_gi($gilist);
+
 
     # now I can perform the mapping
     my %Lineage_by_gi = ();
-    foreach my $gi (keys %taxid_found_by_gi) {
-	my $taxid = checktaxid4merged($taxid_found_by_gi{$gi});
+    foreach my $gi (keys %{$taxid_found_by_gi}) {
+	my $taxid = checktaxid4merged($taxid_found_by_gi->{$gi});
 	if (!defined $taxid) {
 	    $logger->error("Error $gi gives undefined TaxID");
 	    next;
