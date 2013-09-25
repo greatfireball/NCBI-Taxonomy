@@ -151,7 +151,7 @@ sub check4gis(\%) {
 
     my %taxid_found_by_gi = ();
 
-    open(FH, "<", $taxdatabase) || logger->logdie("Unable to open taxonomic database at '$taxdatabase'");
+    open(FH, "<", $taxdatabase) || $logger->logdie("Unable to open taxonomic database at '$taxdatabase'");
     binmode(FH);
 
     my $data_format = "LL";
