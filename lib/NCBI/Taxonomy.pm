@@ -210,43 +210,7 @@ sub check4gis(\%) {
 	    $logger->error("Error $gi gives undefined TaxID");
 	    next;
 	}
-
-	# check if the lineage exists in the ring_buffer
-	if (exists $ring_buffer_storage{$taxid})
-	{
-	    $logger->debug("Used ring buffer to speed up");
-	    $Lineage_by_gi{$gi} = [@{$ring_buffer_storage{$taxid}}]
-	} else {
-	    my $taxid4ringbuffer = $taxid;
-	    while () {
-		push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes->[$taxid]->{rank}});
-		$taxid = checktaxid4merged($nodes->[$taxid]->{ancestor});
-		if (!defined $taxid) {
-		    $logger->error("Error $gi gives undefined TaxID");
-		    delete $Lineage_by_gi{$gi};
-		    last;
-		}
-		if ($taxid == 1) {
-		    push(@{$Lineage_by_gi{$gi}}, {taxid => $taxid, rank => $nodes->[$taxid]->{rank}}); 
-		    # check if the ringbuffer is filled completely
-		    if (@ring_buffer >= $max_ring_buffer_size)
-		    {
-			while (@ring_buffer >= $max_ring_buffer_size)
-			{
-			    my $forremove = shift(@ring_buffer);
-			    delete ($ring_buffer_storage{$forremove});
-			    $logger->debug("Deleted from ring buffer!");
-			}
-		    } 
-	
-		    push(@ring_buffer, $taxid4ringbuffer);
-		    $ring_buffer_storage{$taxid4ringbuffer} = [@{$Lineage_by_gi{$gi}}];
-		    $logger->debug("Filled ring buffer!");
-
-		    last;
-		};
-	    }
-	}
+	$Lineage_by_gi{$taxid} = getlineagebytaxid($taxid);
     }
 
     return \%Lineage_by_gi;
@@ -396,7 +360,7 @@ sub getlineagebytaxid {
     {
 	push(@{$out}, $nodes->[$act_id]); 
 	$act_id=$nodes->[$act_id]{ancestor}
-    } until ($nodes->[$act_id]{ancestor}!=$act_id);
+    } until ($nodes->[$act_id]{ancestor}==$act_id);
 
     return $out;
 }
