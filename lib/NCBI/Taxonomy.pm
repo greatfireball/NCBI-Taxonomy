@@ -81,7 +81,7 @@ sub getLineagesbyGI(\@) {
 	$gilist2search{$_}++;
     }
 
-    return check4gis(\%gilist2search);
+    return check4gis([keys %gilist2search]);
 
 }
 
@@ -127,7 +127,7 @@ sub getTaxonomicRankbyGI(\@$) {
 	$gilist2search{$_}++;
     }
 
-    my $result = check4gis(\%gilist2search);
+    my $result = check4gis( [keys %gilist2search ] );
 
     # now I need to extract the right taxon rank
     my %taxonomicrankbyGI = ();
@@ -213,14 +213,19 @@ sub get_taxid_from_gilist {
     return \%taxid_found_by_gi;
 }
 
-sub check4gis(\%) {
+sub check4gis {
     my ($gilist) = @_;
 
-    my $taxid_found_by_gi = get_taxid_from_gi($gilist);
-
+    my $taxid_found_by_gi = get_taxid_from_gilist($gilist);
 
     # now I can perform the mapping
     my %Lineage_by_gi = ();
+    my %wanted_elements = (
+	rank => 1,
+        sciname => 1,
+        taxid => 1
+	);
+	
     foreach my $gi (keys %{$taxid_found_by_gi}) {
 	my $taxid = checktaxid4merged($taxid_found_by_gi->{$gi});
 	if (!defined $taxid) {
@@ -228,6 +233,16 @@ sub check4gis(\%) {
 	    next;
 	}
 	$Lineage_by_gi{$taxid} = getlineagebytaxid($taxid);
+	# remove unwanted elements
+	foreach my $node (@{$Lineage_by_gi{$taxid}})
+	{
+	    while (my ($key, $value) = each %{$node}) {
+		if (! exists $wanted_elements{$key})
+		{
+		    delete $node->{$key};
+		}
+	    }
+	}
     }
 
     return \%Lineage_by_gi;
@@ -377,7 +392,7 @@ sub getlineagebytaxid {
     {
 	push(@{$out}, $nodes->[$act_id]); 
 	$act_id=$nodes->[$act_id]{ancestor}
-    } until ($nodes->[$act_id]{ancestor}==$act_id);
+    } until ($out->[-1]{ancestor}==$out->[-1]{taxid});
 
     return $out;
 }
