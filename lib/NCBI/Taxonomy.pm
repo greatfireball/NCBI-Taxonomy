@@ -225,23 +225,20 @@ sub check4gis {
         sciname => 1,
         taxid => 1
 	);
-	
+
     foreach my $gi (keys %{$taxid_found_by_gi}) {
 	my $taxid = checktaxid4merged($taxid_found_by_gi->{$gi});
 	if (!defined $taxid) {
 	    $logger->error("Error $gi gives undefined TaxID");
 	    next;
 	}
-	$Lineage_by_gi{$taxid} = getlineagebytaxid($taxid);
 	# remove unwanted elements
-	foreach my $node (@{$Lineage_by_gi{$taxid}})
+	foreach my $node (@{getlineagebytaxid($taxid)})
 	{
-	    while (my ($key, $value) = each %{$node}) {
-		if (! exists $wanted_elements{$key})
-		{
-		    delete $node->{$key};
-		}
-	    }
+	    my %nodehash = %{$node};
+	    my %filtered_hash = ();
+	    @filtered_hash{(keys %wanted_elements)} = @nodehash{(keys %wanted_elements)};
+	    push(@{$Lineage_by_gi{$gi}}, \%filtered_hash)
 	}
     }
 
