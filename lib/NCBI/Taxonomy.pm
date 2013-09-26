@@ -24,6 +24,7 @@ $logger->debug("Loaded the module NCBI::Taxonomy.pm (file ".__FILE__.", version:
 my $TAXDIR = './t/data/';   # where are the taxonomy-files stored
 my $taxdatabase = $TAXDIR."/gi_taxid.bin";
 my $taxnodesdatabase = $TAXDIR."/nodes.bin";
+my $taxranksdatabase = $TAXDIR."/ranks.bin";
 
 ### the following lines are needed for the format of the gi2taxid binary file
 my $data_format = "LL";
@@ -37,6 +38,16 @@ if (-e $taxnodesdatabase)
 {
     # the nodes DB was not found
     $logger->debug("Unable to find the file '$taxnodesdatabase'");
+}
+
+my $ranks;
+if (-e $taxranksdatabase)
+{
+    $ranks = getranksimported();         # import the complete node information as newnodes
+} else 
+{
+    # the nodes DB was not found
+    $logger->debug("Unable to find the file '$taxranksdatabase'");
 }
 
 my %downloaded_gi_taxid = ();
@@ -143,11 +154,7 @@ sub getTaxonomicRankbyGI(\@$) {
 #
 
 sub getallranksusedbyNCBI {
-    return ("class","family","forma","genus","infraclass","infraorder","kingdom",
-	    "no rank","order","parvorder","phylum","species","species group",
-	    "species subgroup","subclass","subfamily","subgenus","subkingdom",
-	    "suborder","subphylum","subspecies","subtribe","superclass",
-	    "superfamily","superkingdom","superorder","superphylum","tribe","varietas");
+    return (@{$ranks});
 }
 
 sub get_taxid_from_gilist {
@@ -379,6 +386,12 @@ sub getnewnodesimported {
     my $nodes = retrieve($taxnodesdatabase)  || $logger->logcroak("Unable to read new nodes database from '$taxnodesdatabase'");
     
     return $nodes;
+}
+
+sub getranksimported {
+    my $ranks = retrieve($taxranksdatabase)  || $logger->logcroak("Unable to read the ranks database from '$taxranksdatabase'");
+    
+    return $ranks;
 }
 
 1;
