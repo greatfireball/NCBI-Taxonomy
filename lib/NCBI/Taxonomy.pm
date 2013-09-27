@@ -120,14 +120,7 @@ sub getTaxonomicRankbyGI(\@$) {
 
     $logger->logcroak("Use of not known taxonomic rank") if ($taxonrankvalid == 0);
 
-    my %gilist2search = ();
-    # check if gis are only numbers!
-    foreach (@gilist) {
-	$logger->logcroak("Use only numbers as GIs!") if ($_ =~ /\D/);
-	$gilist2search{$_}++;
-    }
-
-    my $result = check4gis( [keys %gilist2search ] );
+    my $result= getLineagesbyGI(@gilist);
 
     # now I need to extract the right taxon rank
     my %taxonomicrankbyGI = ();
