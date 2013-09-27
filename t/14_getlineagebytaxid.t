@@ -13,4 +13,15 @@ BEGIN { use_ok('NCBI::Taxonomy') };
 
 can_ok('NCBI::Taxonomy', 'getlineagebytaxid');
 
+use lib './t';
+use RefData;
+
+foreach my $taxid (keys %{$RefData::lineage})
+{
+	my $expected = $RefData::lineage->{$taxid};
+	my $got = NCBI::Taxonomy::getlineagebytaxid($taxid);
+	is_deeply($got, $expected, "Lineage for taxid $taxid");
+}
+
+
 done_testing();

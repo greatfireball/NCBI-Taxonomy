@@ -13,17 +13,13 @@ BEGIN { use_ok('NCBI::Taxonomy') };
 
 can_ok('NCBI::Taxonomy', 'getallranksusedbyNCBI');
 
-my $expect = [
-		'genus',
-          	'class',
-          	'phylum',
-          	'species',
-          	'family',
-          	'no rank'
-             ];
+use lib './t';
+use RefData;
 
-my $got = [ NCBI::Taxonomy::getallranksusedbyNCBI() ];
+my @expect = @RefData::ranks;
 
-is_deeply( [ sort @{$got} ], [ sort @{$expect} ], 'Are the right taxonomic ranks are returned?');
+my @got = NCBI::Taxonomy::getallranksusedbyNCBI();
+
+is_deeply( [ sort @got ], [ sort @expect ], 'Are the right taxonomic ranks are returned?');
 
 done_testing();
