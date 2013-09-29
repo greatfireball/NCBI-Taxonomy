@@ -312,4 +312,171 @@ foreach my $rank (map {$nodes->{$_}{rank}} (keys %{$nodes}))
 }
 our @ranks = keys (%ranks_hash);
 
+### created some combinations using the following command:
+###
+###     for i in $(seq 1 50); do echo $(seq 2 23 | shuf -n 2 | sort -n | tr "\n" ","); done | sort -V | uniq | shuf -n 25 | sort -V
+###
+###     2,16,
+###     2,20,
+###     3,4,
+###     4,5,
+###     4,17,
+###     5,13,
+###     5,15,
+###     6,14,
+###     6,19,
+###     7,14,
+###     7,16,
+###     8,16,
+###     9,16,
+###     9,18,
+###     12,14,
+###     12,16,
+###     12,20,
+###     12,21,
+###     13,15,
+###     14,16,
+###     14,19,
+###     15,17,
+###     16,19,
+###     17,19,
+###     22,23,
+###  
+
+our @pairwise_lcs = (
+    {
+	first_taxon => 2,
+	second_taxon => 16,
+	lca          => 1
+    },
+    {
+	first_taxon => 2,
+	second_taxon => 20,
+	lca          => 1
+    },
+    {
+	first_taxon => 3,
+	second_taxon => 4,
+	lca          => 1
+    },
+    {
+	first_taxon => 4,
+	second_taxon => 5,
+	lca          => 1
+    },
+    {
+	first_taxon => 4,
+	second_taxon => 17,
+	lca          => 4
+    },
+    {
+	first_taxon => 5,
+	second_taxon => 13,
+	lca          => 1
+    },
+    {
+	first_taxon => 5,
+	second_taxon => 15,
+	lca          => 1
+    },
+    {
+	first_taxon => 6,
+	second_taxon => 14,
+	lca          => 1
+    },
+    {
+	first_taxon => 6,
+	second_taxon => 19,
+	lca          => 1
+    },
+    {
+	first_taxon => 7,
+	second_taxon => 14,
+	lca          => 7
+    },
+    {
+	first_taxon => 7,
+	second_taxon => 16,
+	lca          => 4
+    },
+    {
+	first_taxon => 8,
+	second_taxon => 16,
+	lca          => 8
+    },
+    {
+	first_taxon => 9,
+	second_taxon => 16,
+	lca          => 4
+    },
+    {
+	first_taxon => 9,
+	second_taxon => 18,
+	lca          => 4
+    },
+    {
+	first_taxon => 12,
+	second_taxon => 14,
+	lca          => 4
+    },
+    {
+	first_taxon => 12,
+	second_taxon => 16,
+	lca          => 12
+    },
+    {
+	first_taxon => 12,
+	second_taxon => 20,
+	lca          => 12
+    },
+    {
+	first_taxon => 12,
+	second_taxon => 21,
+	lca          => 12
+    },
+    {
+	first_taxon => 13,
+	second_taxon => 15,
+	lca          => 10
+    },
+    {
+	first_taxon => 14,
+	second_taxon => 16,
+	lca          => 4
+    },
+    {
+	first_taxon => 14,
+	second_taxon => 19,
+	lca          => 4
+    },
+    {
+	first_taxon => 15,
+	second_taxon => 17,
+	lca          => 4
+    },
+    {
+	first_taxon => 16,
+	second_taxon => 19,
+	lca          => 16
+    },
+    {
+	first_taxon => 17,
+	second_taxon => 19,
+	lca          => 12
+    },
+    {
+	first_taxon => 22,
+	second_taxon => 23,
+	lca          => 18
+    }
+    );
+
+# add the lineage to each taxon of the lca list
+foreach my $act_pair (@pairwise_lcs)
+{
+    $act_pair->{first_lineage} = $lineage->{$act_pair->{first_taxon}};
+    $act_pair->{second_lineage} = $lineage->{$act_pair->{second_taxon}};
+    $act_pair->{lca_lineage} = $lineage->{$act_pair->{lca}};    
+}
+
 1;
