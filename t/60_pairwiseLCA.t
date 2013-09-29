@@ -24,6 +24,9 @@ foreach my $act_pair (@RefData::pairwise_lca)
 	my $got = NCBI::Taxonomy::pairwiseLCA($taxonA, $taxonB);
 
 	is_deeply($got, $expected, "LCA for taxid ".$act_pair->{first_taxon}." and taxid ".$act_pair->{second_taxon});
+
+	my $got_reverse = NCBI::Taxonomy::pairwiseLCA($taxonB, $taxonA);
+	is_deeply($got, $expected, "LCA for reversed comparison taxid ".$act_pair->{second_taxon}." and taxid ".$act_pair->{first_taxon});
 }
 
 # test for same lineage
@@ -34,7 +37,7 @@ foreach my $act_taxon (1..23)
 	my $taxonB   = $expected;
 	my $got = NCBI::Taxonomy::pairwiseLCA($taxonA, $taxonB);
 
-	is_deeply($got, $expected, "LCA for identical taxid $taxonA");
+	is_deeply($got, $expected, "LCA for identical taxid $act_taxon");
 }
 
 done_testing();
