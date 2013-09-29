@@ -343,7 +343,7 @@ our @ranks = keys (%ranks_hash);
 ###     22,23,
 ###  
 
-our @pairwise_lcs = (
+our @pairwise_lca = (
     {
 	first_taxon => 2,
 	second_taxon => 16,
@@ -472,7 +472,7 @@ our @pairwise_lcs = (
     );
 
 # add the lineage to each taxon of the lca list
-foreach my $act_pair (@pairwise_lcs)
+foreach my $act_pair (@pairwise_lca)
 {
     $act_pair->{first_lineage} = $lineage->{$act_pair->{first_taxon}};
     $act_pair->{second_lineage} = $lineage->{$act_pair->{second_taxon}};

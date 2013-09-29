@@ -16,7 +16,7 @@ can_ok('NCBI::Taxonomy', 'pairwiseLCA');
 use lib './t';
 use RefData;
 
-foreach my $act_pair (@RefData::pairwise_lcs)
+foreach my $act_pair (@RefData::pairwise_lca)
 {
 	my $expected = $act_pair->{lca_lineage};
 	my $taxonA   = $act_pair->{first_lineage};
@@ -24,6 +24,17 @@ foreach my $act_pair (@RefData::pairwise_lcs)
 	my $got = NCBI::Taxonomy::pairwiseLCA($taxonA, $taxonB);
 
 	is_deeply($got, $expected, "LCA for taxid ".$act_pair->{first_taxon}." and taxid ".$act_pair->{second_taxon});
+}
+
+# test for same lineage
+foreach my $act_taxon (1..23)
+{
+	my $expected = $RefData::lineage->{$act_taxon};
+	my $taxonA   = $expected;
+	my $taxonB   = $expected;
+	my $got = NCBI::Taxonomy::pairwiseLCA($taxonA, $taxonB);
+
+	is_deeply($got, $expected, "LCA for identical taxid $taxonA");
 }
 
 done_testing();
