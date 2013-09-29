@@ -260,33 +260,26 @@ sub pairwiseLCA {
 	return $lineageA;
     }
 
-    # check for longer lineage
-    if (@{$lineageA}+0 < @{$lineageB}+0)
-    {
-	($lineageA, $lineageB) = ($lineageB, $lineageA);
-    }
-
-    my $len_A = @{$lineageA};
-
-    my $index = $len_A-1;
+    my @linA = reverse @{$lineageA};
+    my @linB = reverse @{$lineageB};
 
     my @lcalineage = ();
 
-    my %taxidsB = ();
+    my $index = 0;
+    my $min_index = (@linA+0<=@linB+0) ? @linA+0 : @linB+0;
 
-    foreach my $taxon (@{$lineageB})
+    while ($index < $min_index)
     {
-	$taxidsB{$taxon->{taxid}}++;
-    }
-
-    while (exists $taxidsB{$lineageA->[$index]{taxid}} && $index > 0)
-    {
-	push(@lcalineage, $lineageA->[$index]);
-	$index--;
+    	if ($linB[$index]{taxid} == $linA[$index]{taxid})
+    	{
+    	    push(@lcalineage, $linA[$index]);
+    	} else {
+    	    last;
+    	}
+    	$index++;
     }
 
     return [reverse @lcalineage];
-    
 }
 
 # my $result = NCBI::Taxonomy::getLCAbyGIs(\@gis, 0.5);
