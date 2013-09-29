@@ -254,6 +254,18 @@ sub pairwiseLCA {
 
     my ($lineageA, $lineageB) = @_;
 
+    # check for same taxid and in this case return $lineageA (does not matter if A or B)
+    if ($lineageA->[0]{taxid} == $lineageB->[0]{taxid})
+    {
+	return $lineageA;
+    }
+
+    # check for longer lineage
+    if (@{$lineageA}+0 < @{$lineageB}+0)
+    {
+	($lineageA, $lineageB) = ($lineageB, $lineageA);
+    }
+
     my $len_A = @{$lineageA};
 
     my $index = $len_A-1;
