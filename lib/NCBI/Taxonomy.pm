@@ -292,8 +292,9 @@ sub getLCAbyGIs
 {
     unless ($no_die_on_untested_functions)
     {
-	die "The function 'getLCAbyGIs' is not yet tested! Therefore, the program dies at this statement. This check can be deactivated by setting the varibale '$no_die_on_untested_functions' = 1 in line 18 of the module\n";
+	die "The function 'getLCAbyGIs' is not yet tested! Therefore, the program dies at this statement. This check can be deactivated by setting the varibale '\$no_die_on_untested_functions' = 1 in line 18 of the module\n";
     }
+  
     my ($refgis, $threshold, $min_lineages) = @_;
 
     if ((! defined $min_lineages) || $min_lineages !~ /^\d+$/ || $min_lineages < 2)
