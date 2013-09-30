@@ -13,6 +13,10 @@ our $VERSION=version->declare("0.70.5");
 # for logging purposes we use the Log4perl module
 use Log::Log4perl;
 
+#### This is used to die in untested functions.
+#### Can be set to 1 to skip the die statement
+my $no_die_on_untested_functions = undef;
+
 my $init_text = "";
 while (<DATA>) { $init_text .= $_; }
 
@@ -286,6 +290,10 @@ sub pairwiseLCA {
 
 sub getLCAbyGIs
 {
+    unless ($no_die_on_untested_functions)
+    {
+	die "The function 'getLCAbyGIs' is not yet tested! Therefore, the program dies at this statement. This check can be deactivated by setting the varibale '$no_die_on_untested_functions' = 1 in line 18 of the module\n";
+    }
     my ($refgis, $threshold, $min_lineages) = @_;
 
     if ((! defined $min_lineages) || $min_lineages !~ /^\d+$/ || $min_lineages < 2)
@@ -478,6 +486,11 @@ which were necessary for the import of the dmp files.
 0.70.5
 
 Added data for creation of a DB and therefore enabling test functionality.
+Moreover, the untested function getLCAbyGIs dies on execution. To avoid this, the variable 
+
+$no_die_on_untested_functions
+
+can be set to a true value on line 18!
 
 
 =head1 AUTHOR
