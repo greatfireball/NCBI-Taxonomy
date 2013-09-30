@@ -10,6 +10,8 @@ WriteMakefile(
 	version                   => 0.77,
 	Log::Log4perl             => 1.29,
 	Storable                  => 0,
+	Test::More                => 0,
+	Test::Exception           => 0
     }, 
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'lib/NCBI/Taxonomy.pm', # retrieve abstract from module
