@@ -4,6 +4,9 @@
 This module is used to parse the NCBI-Taxonomy files and return lists
 of taxonomic lineages for a given GI.
 
+** Version
+   Current version is 0.80
+
 ** Build
 [[https://travis-ci.org/greatfireball/NCBI-Taxonomy][https://travis-ci.org/greatfireball/NCBI-Taxonomy.svg?branch=master]]
 

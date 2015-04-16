@@ -8,7 +8,7 @@ use DateTime::Format::Natural;
 use Storable qw(retrieve nstore);
 
 use version 0.77;
-our $VERSION=version->declare("0.70.5");
+our $VERSION=version->declare("0.80.0");
 
 # for logging purposes we use the Log4perl module
 use Log::Log4perl;
@@ -492,6 +492,14 @@ Moreover, the untested function getLCAbyGIs dies on execution. To avoid this, th
 $no_die_on_untested_functions
 
 can be set to a true value on line 18!
+
+0.80.0
+
+First version available on GitHub
+
+Added a licence file and a org-mode based readme file
+
+Badges for build and coverage are added
 
 
 =head1 AUTHOR

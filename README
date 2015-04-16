@@ -1,4 +1,4 @@
-NCBI-Taxonomy version 0.51
+NCBI-Taxonomy version 0.80
 ==========================
 
 This module is used to parse the NCBI-Taxonomy files and return lists
