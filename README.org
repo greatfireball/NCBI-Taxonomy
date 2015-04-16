@@ -1,0 +1,7 @@
+* NCBI-Taxonomy
+
+** Build
+[[https://travis-ci.org/greatfireball/NCBI-Taxonomy][https://travis-ci.org/greatfireball/NCBI-Taxonomy.svg?branch=master]]
+
+** Coverage
+[[https://coveralls.io/r/greatfireball/NCBI-Taxonomy][https://coveralls.io/repos/greatfireball/NCBI-Taxonomy/badge.svg?branch=master]]
