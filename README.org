@@ -1,7 +1,126 @@
 * NCBI-Taxonomy
 
+** Description
+This module is used to parse the NCBI-Taxonomy files and return lists
+of taxonomic lineages for a given GI.
+
 ** Build
 [[https://travis-ci.org/greatfireball/NCBI-Taxonomy][https://travis-ci.org/greatfireball/NCBI-Taxonomy.svg?branch=master]]
 
 ** Coverage
 [[https://coveralls.io/r/greatfireball/NCBI-Taxonomy][https://coveralls.io/repos/greatfireball/NCBI-Taxonomy/badge.svg?branch=master]]
+
+** Installation
+
+To install this module type the following:
+
+#+BEGIN_SRC sh
+  perl Makefile.PL
+  make
+  make test
+  make install
+#+END_SRC
+
+** Documentation
+#+BEGIN_SRC sh
+  perldoc NCBI::Taxonomy
+#+END_SRC
+
+** Dependencies
+This module requires the following other modules:
+  - DateTime::Format::Natural (v0.96 or above),
+  - version (v0.77 or above),
+  - Log::Log4perl (v1.29 or above),
+  - Storable,
+  - Test::More,
+  - Test::Exception
+
+** History
+*** Version 0.1
+*** Version 0.2
+*** Version 0.3
+  - no protein/nucleic acid parameter is nessesary
+*** Version 0.4
+  - Support for merged TaxIDs
+  - for non exstisting gis links to history tool of NCBI will be
+    returned
+*** Version 0.5
+  - first version compatible to the CPAN standards. Template was
+    created using h2xs v1.23 with options:
+    #+BEGIN_SRC sh
+    -d -XA -n NCBI::Taxonomy
+    #+END_SRC
+    - I fixed the files Changes, README, MANIFEST, but the whole module
+    files will be changed in the next version
+*** Version 0.51
+  - I moved the old module TaxonomyByGi to my new module
+          NCBI::Taxonomy and changed the files Changes and README. I
+          did not add documentation.
+  - added the file Changes to the version control (I forgot to add it ;) )
+  - TODOs:
+    - no tests writen
+    - have to fill the documentation
+    - I want to add the functions to download and prepare the
+          index-files
+*** Version 0.511
+  - added a handling for GIs which could not be found in the
+    index-file and had no substitution comment inside the Genbank
+    Entry
+*** Version 0.52
+  - added a handler for download errors caused by NCBI requests
+*** Version 0.60.0
+  - A new version which uses a binary file type for storing the gi and taxid information.
+*** Version 0.61.1853
+  - Switched to Log::Log4perl for messages and added croak commands for failing IO calls!
+*** Version 0.62.1854
+  - I am using a ring buffer to save 6000 lineages for taxids to speed
+    up the finding of the lineages.
+*** Version 0.63.*
+  - Implementation of a last common ancestor
+**** Version 0.63.1863
+  - Include last common ancestor calculations now
+*** Version 0.64.1868
+  - Fixed the LCA on request of Felix... A new parameter was added and
+    an empty result array reference will be returned, if less than 2
+    lineages are compared.
+*** Version 0.70.3
+  - Included the new format for the nodes and removed the subroutines
+    which were necessary for the import of the dmp files.
+*** Version 0.70.5
+  - Added data for creation of a DB and therefore enabling test
+    functionality. Moreover, the untested function getLCAbyGIs dies on
+    execution. To avoid this, the variable
+
+    #+BEGIN_SRC perl
+    $no_die_on_untested_functions
+    #+END_SRC
+
+    can be set to a true value on line 18!
+*** Version 0.80.0
+  - First version available on [[https://github.com/greatfireball/NCBI-Taxonomy][GitHub]]
+  - Added a licence file and a org-mode based readme file
+  - Badges for build and coverage are added
+
+** Copyright and licence
+
+The MIT License (MIT)
+
+Copyright (c) 2009-2015 Frank Förster
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
