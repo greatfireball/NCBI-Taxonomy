@@ -19,7 +19,13 @@ DOCUMENTATION
 
 DEPENDENCIES
 
-This module requires no other modules.
+This module requires the following other modules:
+     DateTime::Format::Natural (v0.96 or above),
+     version (v0.77 or above),
+     Log::Log4perl (v1.29 or above),
+     Storable,
+     Test::More,
+     Test::Exception
 
 COPYRIGHT AND LICENCE
 
