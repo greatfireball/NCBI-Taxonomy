@@ -7,11 +7,23 @@ of taxonomic lineages for a given GI.
 ** Version
    Current version is 0.80
 
-** Build
+** Branches
+
+*** Master
+
+**** Build
 [[https://travis-ci.org/greatfireball/NCBI-Taxonomy][https://travis-ci.org/greatfireball/NCBI-Taxonomy.svg?branch=master]]
 
-** Coverage
+**** Coverage
 [[https://coveralls.io/r/greatfireball/NCBI-Taxonomy][https://coveralls.io/repos/greatfireball/NCBI-Taxonomy/badge.svg?branch=master]]
+
+*** Develop
+
+**** Build
+[[https://travis-ci.org/greatfireball/NCBI-Taxonomy][https://travis-ci.org/greatfireball/NCBI-Taxonomy.svg?branch=develop]]
+
+**** Coverage
+[[https://coveralls.io/r/greatfireball/NCBI-Taxonomy][https://coveralls.io/repos/greatfireball/NCBI-Taxonomy/badge.svg?branch=develop     ]]
 
 ** Installation
 
