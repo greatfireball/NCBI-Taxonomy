@@ -434,11 +434,22 @@ unedited.
 
 Blah blah blah.
 
+=head2 FORMAT OF THE INDEX FILE
+
+C<NCBI::Taxonomy> uses it's own index file format. It has a fixed size
+entry per GI comprising the following information:
+
+      Field:     | Bytes per Entry: | Description:
+   ------------------------------------------------------------------
+    GI           |         4        | GI as 32bit unsigned number
+    TaxID        |         4        | TaxID as 32bit unsigned number
+
+Each entry is placed at a byte offset of C<GI-number * 8 (Bytes per Entry)>.
+Therefore, it is ensured, that each entry can ge accessed directly.
+
 =head2 EXPORT
 
 None by default.
-
-
 
 =head1 SEE ALSO
 
