@@ -436,16 +436,57 @@ Blah blah blah.
 
 =head2 FORMAT OF THE INDEX FILE
 
-C<NCBI::Taxonomy> uses it's own index file format. It has a fixed size
-entry per GI comprising the following information:
+C<NCBI::Taxonomy> uses it's own index file format. Starting with
+version C<1.0> the index file format has changed to support NCBIs
+moving from GIs to Accessions.
+Therefore, the index file is devided into three parts:
 
-      Field:     | Bytes per Entry: | Description:
-   ------------------------------------------------------------------
-    GI           |         4        | GI as 32bit unsigned number
-    TaxID        |         4        | TaxID as 32bit unsigned number
+=over4
 
-Each entry is placed at a byte offset of C<GI-number * 8 (Bytes per Entry)>.
-Therefore, it is ensured, that each entry can ge accessed directly.
+=item * index file header (currently 128 bytes)
+
+=item * GI part of the index file (variable length)
+
+=item * Accession part of the index file (variable length)
+
+=back
+
+The current version of the index file format is C<1.0>.
+
+=head3 INDEX FILE HEADER
+
+The main header contains the following information:
+
+      Field:        | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    MagicBytes      |         4        | "NTIF" as string for NCBI-Taxonomy-Index-File
+    Version(maj)    |         2        | major version number of file format as 16bit unsigned number
+    Version(min)    |         2        | minor version number of file format as 16bit unsigned number
+                    |         8        | Reserved
+    Offset GI part  |         8        | File offset of GI part as 64bit unsigned number
+    Length GI part  |         8        | Length of GI part as 64bit unsigned number
+    Offset Acc part |         8        | File offset of Accession part as 64bit unsigned number
+    Length Acc part |         8        | Length of Accession part as 64bit unsigned number
+    Width TaxID     |         1        | Width of the TaxID in Bits
+    Creation date   |        14        | Creation date of the index file in Format YYYYMMDDHHMMSS
+    md5sum input    |        16        | MD5sum of all input data processed to generate the index file
+    md5sum index    |        16        | MD5sum of complete index file (with this checksum set to all zeros)
+                    |        33        | Reserved
+
+Its size is currently 128 Bytes and contains important information to
+use the index file correctly.
+
+After the header, additional data might be placed, due to the start of
+the GI and Accession part is stated inside the header.
+
+=head3 GI PART OF THE INDEX FILE
+
+This part contains all mappings from GIs to TaxIDs. The format uses a
+fixed field width. Each entry contains as only value the TaxID. Those
+entries are placed at an offset of C<GI*Width TaxID in bytes> inside
+the block. Therefore, one GI entry can be accessed via the GI, the
+offset of the GI-part, and the TaxID width both from the header
+section.
 
 =head2 EXPORT
 
