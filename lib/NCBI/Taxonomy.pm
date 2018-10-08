@@ -481,12 +481,21 @@ the GI and Accession part is stated inside the header.
 
 =head3 GI PART OF THE INDEX FILE
 
+The GI section contain its own header providing the following information:
+
+      Field:             | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    Offset GI data part  |         8        | File offset of GI data part as 64bit unsigned number
+    Length GI data part  |         8        | Length of GI data part as 64bit unsigned number
+    Width TaxID          |         1        | Width of the TaxID in Bits
+                         |       111        | Reserved
+
 This part contains all mappings from GIs to TaxIDs. The format uses a
 fixed field width. The width (in bits) can be obtained from the field
-C<Width TaxID> from the index file header.  Each entry contains as
+C<Width TaxID> from the GI section header.  Each entry contains as
 only value the TaxID. Those entries are placed at an offset of
 C<GI*(Width TaxID in bits)> inside the block. Therefore, one GI entry
-can be accessed via the GI, the offset of the GI-part, and the TaxID
+can be accessed via the GI, the offset of the GI-data-part, and the TaxID
 width both from the header section.
 
 =head2 EXPORT
