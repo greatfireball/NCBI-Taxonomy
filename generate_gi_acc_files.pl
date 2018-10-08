@@ -53,16 +53,13 @@ while (<>)
 close($fh) || die "Unable to close filehandle\n";
 
 # write to $basename.".gi.bin"
+substr($field, ($max_gi+1)*3) = "";
 open($fh, ">:bytes", $basename.".gi.bin") || die "Unable to open output file\n";
-syswrite $fh, $gi_field, ($max_gi+1)*3;
+print $fh $gi_field;
 close($fh) || die "Unable to close output file\n";
 
 # write to $basename.".acc.bin"
 open($fh, ">:bytes", $basename.".acc.bin") || die "Unable to open output file\n";
-syswrite $fh, $acc_field;
+print $fh $acc_field;
 close($fh) || die "Unable to close output file\n";
-
-#substr($field, ($max_gi+1)*3) = "";
-
-#print $field;
 
