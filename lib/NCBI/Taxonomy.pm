@@ -498,6 +498,39 @@ C<GI*(Width TaxID in bits)> inside the block. Therefore, one GI entry
 can be accessed via the GI, the offset of the GI-data-part, and the TaxID
 width both from the header section.
 
+=head3 ACC PART OF THE INDEX FILE
+
+The accession section contain its own header providing the following information:
+
+      Field:             | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    Offset acc data part |         8        | File offset of acc data part as 64bit unsigned number
+    Length acc data part |         8        | Length of acc data part as 64bit unsigned number
+    Width single entry   |         1        | Width of a single entry in Bits
+    Width TaxID          |         1        | Width of the TaxID in Bits
+                         |       110        | Reserved
+
+This part contains all mappings from accessions to TaxIDs. The format
+uses a fixed field width. Due to the variable length of the accessions
+(currently between 4 and 16 characters), at least one entry is used
+for an accession entry. One single entry contains the following
+information and has a width of C<Width single entry> bits:
+
+      Field:             | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    Flag and version     |         1        | Highest bit indicate a accession entry start if set. If highest
+                         |                  | bit is not set, the entry is part of the last entry having
+                         |                  | that flag field set.
+                         |                  | Lower 7 bits contain the version of the accession (max value 127)
+    Accession            |         8        | Contains the accession or additional parts of an accession
+                         |                  | (if flag in first byte is set). If the length is not 8 character
+                         |                  | it will be filled with spaces.
+    TaxID                |     variable     | TaxID with a width specified in accession part header
+
+All accessions are sorted alphanumerically and can be searched by a
+binary search. A complete accession entry contains one entry with its
+flag being set and all following entrys with the flag field unset.
+
 =head2 EXPORT
 
 None by default.
