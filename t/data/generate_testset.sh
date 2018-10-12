@@ -7,9 +7,11 @@ perl -e '
 
    srand(20181012);
 
-   for(my $i = 2; $i<1000; $i++)
+   my $max_number = 20;
+
+   for(my $i = 2; $i<2+$max_number; $i++)
    {
       $acc=$header[rand(int(@header))].sprintf("%04d", $i);
 
-      print join("\t", ($acc, $acc.".".int(1+rand(10)), int(rand(100)+1), $i)),"\n";
+      print join("\t", ($acc, $acc.".".int(1+rand(10)), int(rand($max_number/5)+1), $i)),"\n";
    }' | gzip --best >test.accession2taxid.gz
