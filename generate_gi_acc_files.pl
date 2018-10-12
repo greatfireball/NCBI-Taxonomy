@@ -76,7 +76,8 @@ close($fh) || die "Unable to close filehandle\n";
 
 =cut
 
-my $header        = "\000"x128;
+my $header_length_expected = 128;
+my $header        = "\000"x$header_length_expected;
 
 my $major_version = 1;
 my $minor_version = 0;
@@ -165,7 +166,7 @@ $gi_length     = length($gi_header)+length($gi_field);
 $acc_offset    = $gi_offset+$gi_length;
 $acc_length    = length($acc_header)+length($acc_field);
 		   
-$header = pack("A4SSA8LLLLCA14A16A16A33",
+$header = pack("A4SSA8QQQQCA14A16A16A33",
 	       "NTIF",             # magic bytes
 	       $major_version,     # major version number
 	       $minor_version,     # minor version number
@@ -180,6 +181,7 @@ $header = pack("A4SSA8LLLLCA14A16A16A33",
 	       "\000"x16,          # md5sum (unused)
 	       "\000"x33           # reserved
     );
+die unless (length($header) == $header_length_expected);
 
 open($fh, ">:bytes", $basename.".taxonomy.bin") || die "Unable to open output file\n";
 print $fh $header, $gi_header, $gi_field, $acc_header, $acc_field;
