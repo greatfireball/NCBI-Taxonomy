@@ -155,8 +155,8 @@ $acc_header = pack("QQCCA",
 
 $gi_offset     = length($header);
 $gi_length     = length($gi_header)+length($gi_field);
-$acc_offset    = length($header)+length($gi_header)+length($gi_field);
-$acc_length    = length($header)+length($gi_header)+length($gi_field)+length($acc_header)+length($acc_field);
+$acc_offset    = $gi_offset+$gi_length;
+$acc_length    = length($acc_header)+length($acc_field);
 		   
 $header = pack("A4SSA8LLLLCA14A16A16A33",
 	       "NTIF",             # magic bytes
