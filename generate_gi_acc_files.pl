@@ -116,17 +116,20 @@ $header = pack("A4SSA8QQQQCA14A16A16A33",
                          |       111        | Reserved
 
 =cut
-    
-my $gi_header = "\000"x128;
+
+my $gi_header_length_expected = 128;
+my $gi_header = "\000"x$gi_header_length_expected;
 my $gi_data_length = int(($max_gi+1)*$taxid_width/8);
 
 
-$gi_header = pack("QQCA",
+$gi_header = pack("QQCA111",
 		  $gi_offset+length($gi_header),
 		  $gi_data_length,
 		  $taxid_width,
 		  "\000"x111
     );
+
+die unless (length($gi_header) == $gi_header_length_expected);
 
 substr($gi_field, $gi_data_length) = "";
 
@@ -144,15 +147,18 @@ substr($gi_field, $gi_data_length) = "";
 
 =cut
 
-my $acc_header = "\000"x128;
+my $acc_header_length_expected = 128;
+my $acc_header = "\000"x$acc_header_length_expected;
 
-$acc_header = pack("QQCCA",
+$acc_header = pack("QQCCA110",
 		   $gi_offset+$gi_length+length($acc_header),
 		   length($acc_field),
 		   $taxid_width,
 		   12,
 		   "\000"x110
     );
+
+die unless (length($acc_header) == $acc_header_length_expected);
 
 $gi_offset     = length($header);
 $gi_length     = length($gi_header)+length($gi_field);
