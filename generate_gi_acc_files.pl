@@ -52,14 +52,128 @@ while (<>)
 
 close($fh) || die "Unable to close filehandle\n";
 
-# write to $basename.".gi.bin"
-substr($field, ($max_gi+1)*3) = "";
-open($fh, ">:bytes", $basename.".gi.bin") || die "Unable to open output file\n";
-print $fh $gi_field;
-close($fh) || die "Unable to close output file\n";
+# prepare the header
+=pod
 
-# write to $basename.".acc.bin"
-open($fh, ">:bytes", $basename.".acc.bin") || die "Unable to open output file\n";
-print $fh $acc_field;
-close($fh) || die "Unable to close output file\n";
+=head2 Main header
 
+      Field:        | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    MagicBytes      |         4        | "NTIF" as string for NCBI-Taxonomy-Index-File
+    Version(maj)    |         2        | major version number of file format as 16bit unsigned number
+    Version(min)    |         2        | minor version number of file format as 16bit unsigned number
+                    |         8        | Reserved
+    Offset GI part  |         8        | File offset of GI part as 64bit unsigned number
+    Length GI part  |         8        | Length of GI part as 64bit unsigned number
+    Offset Acc part |         8        | File offset of Accession part as 64bit unsigned number
+    Length Acc part |         8        | Length of Accession part as 64bit unsigned number
+    Width TaxID     |         1        | Width of the TaxID in Bits
+    Creation date   |        14        | Creation date of the index file in Format YYYYMMDDHHMMSS
+    md5sum input    |        16        | MD5sum of all input data processed to generate the index file
+    md5sum index    |        16        | MD5sum of complete index file (with this checksum set to all zeros)
+                    |        33        | Reserved
+
+=cut
+
+my $header        = "\000"x128;
+
+my $major_version = 1;
+my $minor_version = 0;
+my $taxid_width   = 24;
+my $gi_offset     = length($header);
+my $gi_length     = 0;
+my $acc_offset    = 0;
+my $acc_length    = 0;
+my ($sec, $min, $hour, $mday, $mon, $year) = localtime();
+my $current_date  = sprintf("%04d%02d%02d%02d%02d%02d", 1900+$year, 1+$mon, $mday, $hour, $min, $sec);
+
+$header = pack("A4SSA8LLLLCA14A16A16A33",
+	       "NTIF",             # magic bytes
+	       $major_version,     # major version number
+	       $minor_version,     # minor version number
+	       "\000"x8,           # reserved
+	       $gi_offset,         # GI Part Offset
+	       $gi_length,         # GI Part Length
+	       $acc_offset,        # Acc Part Offset
+	       $acc_length,        # Acc Part Length
+	       $taxid_width,       # Bit per TaxID
+	       $current_date,      # Creation date
+	       "\000"x16,          # md5sum (unused)
+	       "\000"x16,          # md5sum (unused)
+	       "\000"x33           # reserved
+    );
+
+=pod 
+
+=head2 GI header
+
+      Field:             | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    Offset GI data part  |         8        | File offset of GI data part as 64bit unsigned number
+    Length GI data part  |         8        | Length of GI data part as 64bit unsigned number
+    Width TaxID          |         1        | Width of the TaxID in Bits
+                         |       111        | Reserved
+
+=cut
+    
+my $gi_header = "\000"x128;
+my $gi_data_length = int(($max_gi+1)*$taxid_width/8);
+
+
+$gi_header = pack("LLCA",
+		  length($header)+length($gi_header),
+		  $gi_data_length,
+		  $taxid_width,
+		  "\000"x111
+    );
+
+substr($gi_field, $gi_data_length) = "";
+
+=pod
+
+=head2 ACC header
+
+      Field:             | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    Offset acc data part |         8        | File offset of acc data part as 64bit unsigned number
+    Length acc data part |         8        | Length of acc data part as 64bit unsigned number
+    Width single entry   |         1        | Width of a single entry in Bits
+    Width TaxID          |         1        | Width of the TaxID in Bits
+                         |       110        | Reserved
+
+=cut
+
+my $acc_header = "\000"x128;
+
+$acc_header = pack("LLCCA",
+		   length($header)+length($gi_header)+length($gi_field)+length($acc_header),
+		   length($acc_field),
+		   $taxid_width,
+		   12,
+		   "\000"x110
+    );
+
+$gi_offset     = length($header);
+$gi_length     = length($gi_header)+length($gi_field);
+$acc_offset    = length($header)+length($gi_header)+length($gi_field);
+$acc_length    = length($header)+length($gi_header)+length($gi_field)+length($acc_header)+length($acc_field);
+		   
+$header = pack("A4SSA8LLLLCA14A16A16A33",
+	       "NTIF",             # magic bytes
+	       $major_version,     # major version number
+	       $minor_version,     # minor version number
+	       "\000"x8,           # reserved
+	       $gi_offset,         # GI Part Offset
+	       $gi_length,         # GI Part Length
+	       $acc_offset,        # Acc Part Offset
+	       $acc_length,        # Acc Part Length
+	       $taxid_width,       # Bit per TaxID
+	       $current_date,      # Creation date
+	       "\000"x16,          # md5sum (unused)
+	       "\000"x16,          # md5sum (unused)
+	       "\000"x33           # reserved
+    );
+
+open($fh, ">:bytes", $basename.".taxonomy.bin") || die "Unable to open output file\n";
+print $fh $header, $gi_header, $gi_field, $acc_header, $acc_field;
+close($fh) || die "Unable to close output file\n";
