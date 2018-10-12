@@ -81,7 +81,7 @@ sub getLineagesbyGI(\@) {
     my %gilist2search = ();
     # check if gis are only numbers!
     foreach (@gilist) {
-	$logger->logcroak("Use only numbers as GIs!") if ($_ =~ /\D/);
+	# $logger->logcroak("Use only numbers as GIs!") if ($_ =~ /\D/);
 	$gilist2search{$_}++;
     }
 
