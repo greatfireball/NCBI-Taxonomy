@@ -12,6 +12,7 @@ my $acc_field = "";
 
 open(my $fh, ">:bytes", $ref_field) || die "Unable to open filehandle\n";
 
+my $taxid_width_bits   = 24;
 my $max_gi = 0;
 
 my $max_version = 127;
@@ -26,9 +27,9 @@ while (<>)
 
     $max_gi = $gi if ($max_gi<$gi);
 
-    my $taxid_compressed = substr(pack("l", $taxid), 0, 3);
+    my $taxid_compressed = substr(pack("l", $taxid), 0, int($taxid_width_bits/8));
 
-    seek($fh, $gi*3, 0) || die;
+    seek($fh, $gi*int($taxid_width_bits/8), 0) || die;
     print $fh $taxid_compressed;
 
     my $version = 0;
