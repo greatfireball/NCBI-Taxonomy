@@ -16,12 +16,12 @@ my $folder = "./t/data/";
 
 chdir($folder) || die "Unable to change to folder '$folder'\n";
 
-my $cmd = "perl ../../make_gi_taxid.pl --no-download --overwrite --quiet";
+my $cmd = "perl ../../make_taxid_indizes.pl --no-download --overwrite --quiet";
 
 system($cmd);
 
 my $errorcode = $?;
 
-is($errorcode, 0, "Test of error code of make_gi_taxid.pl run");
+is($errorcode, 0, "Test of error code of make_taxid_indizes.pl run");
 
 done_testing();
