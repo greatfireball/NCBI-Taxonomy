@@ -87,7 +87,7 @@ my $acc_length    = 0;
 my ($sec, $min, $hour, $mday, $mon, $year) = localtime();
 my $current_date  = sprintf("%04d%02d%02d%02d%02d%02d", 1900+$year, 1+$mon, $mday, $hour, $min, $sec);
 
-$header = pack("A4SSA8LLLLCA14A16A16A33",
+$header = pack("A4SSA8QQQQCA14A16A16A33",
 	       "NTIF",             # magic bytes
 	       $major_version,     # major version number
 	       $minor_version,     # minor version number
@@ -120,8 +120,8 @@ my $gi_header = "\000"x128;
 my $gi_data_length = int(($max_gi+1)*$taxid_width/8);
 
 
-$gi_header = pack("LLCA",
-		  length($header)+length($gi_header),
+$gi_header = pack("QQCA",
+		  $gi_offset+length($gi_header),
 		  $gi_data_length,
 		  $taxid_width,
 		  "\000"x111
@@ -145,8 +145,8 @@ substr($gi_field, $gi_data_length) = "";
 
 my $acc_header = "\000"x128;
 
-$acc_header = pack("LLCCA",
-		   length($header)+length($gi_header)+length($gi_field)+length($acc_header),
+$acc_header = pack("QQCCA",
+		   $gi_offset+$gi_length+length($acc_header),
 		   length($acc_field),
 		   $taxid_width,
 		   12,
