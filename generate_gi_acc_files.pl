@@ -82,12 +82,24 @@ my $header        = "\000"x$header_length_expected;
 my $major_version = 1;
 my $minor_version = 0;
 my $taxid_width   = 24;
-my $gi_offset     = length($header);
-my $gi_length     = 0;
-my $acc_offset    = 0;
-my $acc_length    = 0;
+
 my ($sec, $min, $hour, $mday, $mon, $year) = localtime();
 my $current_date  = sprintf("%04d%02d%02d%02d%02d%02d", 1900+$year, 1+$mon, $mday, $hour, $min, $sec);
+
+my $gi_header_length_expected = 128;
+my $gi_header = "\000"x$gi_header_length_expected;
+my $gi_data_length = int(($max_gi+1)*$taxid_width/8);
+
+my $acc_header_length_expected = 128;
+my $acc_header = "\000"x$acc_header_length_expected;
+
+my $gi_offset     = length($header);
+my $gi_length     = length($gi_header)+$gi_data_length;
+
+substr($gi_field, $gi_data_length) = "";
+
+my $acc_offset    = $gi_offset+$gi_length;
+my $acc_length    = length($acc_header)+length($acc_field);
 
 $header = pack("A4SSA8QQQQCA14A16A16A33",
 	       "NTIF",             # magic bytes
@@ -105,7 +117,9 @@ $header = pack("A4SSA8QQQQCA14A16A16A33",
 	       "\000"x33           # reserved
     );
 
-=pod 
+die unless (length($header) == $header_length_expected);
+
+=pod
 
 =head2 GI header
 
@@ -118,11 +132,6 @@ $header = pack("A4SSA8QQQQCA14A16A16A33",
 
 =cut
 
-my $gi_header_length_expected = 128;
-my $gi_header = "\000"x$gi_header_length_expected;
-my $gi_data_length = int(($max_gi+1)*$taxid_width/8);
-
-
 $gi_header = pack("QQCA111",
 		  $gi_offset+length($gi_header),
 		  $gi_data_length,
@@ -131,8 +140,6 @@ $gi_header = pack("QQCA111",
     );
 
 die unless (length($gi_header) == $gi_header_length_expected);
-
-substr($gi_field, $gi_data_length) = "";
 
 =pod
 
@@ -148,40 +155,15 @@ substr($gi_field, $gi_data_length) = "";
 
 =cut
 
-my $acc_header_length_expected = 128;
-my $acc_header = "\000"x$acc_header_length_expected;
-
 $acc_header = pack("QQCCA110",
-		   $gi_offset+$gi_length+length($acc_header),
+		   $acc_offset+length($acc_header),
 		   length($acc_field),
-		   $taxid_width,
 		   12,
+		   $taxid_width,
 		   "\000"x110
     );
 
 die unless (length($acc_header) == $acc_header_length_expected);
-
-$gi_offset     = length($header);
-$gi_length     = length($gi_header)+length($gi_field);
-$acc_offset    = $gi_offset+$gi_length;
-$acc_length    = length($acc_header)+length($acc_field);
-		   
-$header = pack("A4SSA8QQQQCA14A16A16A33",
-	       "NTIF",             # magic bytes
-	       $major_version,     # major version number
-	       $minor_version,     # minor version number
-	       "\000"x8,           # reserved
-	       $gi_offset,         # GI Part Offset
-	       $gi_length,         # GI Part Length
-	       $acc_offset,        # Acc Part Offset
-	       $acc_length,        # Acc Part Length
-	       $taxid_width,       # Bit per TaxID
-	       $current_date,      # Creation date
-	       "\000"x16,          # md5sum (unused)
-	       "\000"x16,          # md5sum (unused)
-	       "\000"x33           # reserved
-    );
-die unless (length($header) == $header_length_expected);
 
 open($fh, ">:bytes", $basename.".taxonomy.bin") || die "Unable to open output file\n";
 print $fh $header, $gi_header, $gi_field, $acc_header, $acc_field;
