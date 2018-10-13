@@ -165,15 +165,15 @@ sub get_taxid_from_gilist {
     my ($file_header, $gi_header, $acc_header) = ("", "", "");
     read(FH, $file_header, 128) || die;
     my %header_info;
-    @header_info{qw(magic_byte majorver minorvar reserved gi_offset gi_length acc_offset acc_length taxid_width datetime md5sum1 md5sum2 reserved2)} = unpack("A4SSA8LLLLCA14A16A16A33", $file_header);
+    @header_info{qw(magic_byte majorver minorvar reserved gi_offset gi_length acc_offset acc_length taxid_width datetime md5sum1 md5sum2 reserved2)} = unpack("A4SSA8QQQQCA14A16A16A33", $file_header);
     seek(FH, $header_info{gi_offset}, 0) || die;
     read(FH, $gi_header, 128) || die;
     my %gi_header_info;
-    @gi_header_info{qw(gi_data_offset gi_data_length taxid_width reserved)} = unpack("LLCA", $gi_header);
+    @gi_header_info{qw(gi_data_offset gi_data_length taxid_width reserved)} = unpack("QQCA111", $gi_header);
     seek(FH, $header_info{acc_offset}, 0) || die;
     read(FH, $acc_header, 128) || die;
     my %acc_header_info;
-    @acc_header_info{qw(acc_data_offset acc_data_length taxid_width reserved)} = unpack("LLCA", $acc_header);
+    @acc_header_info{qw(acc_data_offset acc_data_length width_single_entry taxid_width reserved)} = unpack("QQCCA110", $acc_header);
     
     my $tmp = "";
     
