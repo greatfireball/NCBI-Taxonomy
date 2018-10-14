@@ -14,44 +14,44 @@ BEGIN { use_ok('NCBI::Taxonomy') };
 can_ok('NCBI::Taxonomy', 'get_taxid_from_gilist');
 
 # the follwing lines were obtained from the test input data via:
-# zcat t/data/test.accession2taxid.gz | cut -f 3,4 | sed 's/\([0-9]*\)\t\([0-9]*\)/\2 => \1,/;'
+# zcat t/data/test.accession2taxid.gz | awk '{print $2"\t"$3;}' | sed "s/\([^[:space:]]*\)\t\([0-9]*\)/'\1' => \2,/;"
 
 my $testset = {
-    2 => 4,
-    3 => 4,
-    4 => 3,
-    5 => 4,
-    6 => 1,
-    7 => 4,
-    8 => 4,
-    9 => 1,
-    10 => 1,
-    11 => 2,
-    12 => 3,
-    13 => 3,
-    14 => 2,
-    15 => 3,
-    16 => 2,
-    17 => 2,
-    18 => 2,
-    19 => 1,
-    20 => 4,
-    21 => 2
+    'A00000002.9' => 4,
+    'A00000000003.5' => 4,
+    'G0000004.7' => 3,
+    'F0000005.7' => 4,
+    'D000000006.6' => 1,
+    'C00000000000007.7' => 4,
+    'F0000008.4' => 4,
+    'E000000009.2' => 1,
+    'B00000010.8' => 1,
+    'B00000011.2' => 2,
+    'G0000000012.5' => 3,
+    'D000000000013.1' => 3,
+    'E00000014.10' => 2,
+    'A000000015.6' => 3,
+    'B00016.6' => 2,
+    'E017.9' => 2,
+    'G018.6' => 2,
+    'B00000000000019.1' => 1,
+    'E0000000000000020.8' => 4,
+    'D0000021.7' => 2
 };
 
 # test for single gis
-while (my ($gi, $taxid) = each %{$testset})
+while (my ($acc, $taxid) = each %{$testset})
 {   
-    my @gis = ($gi);
-    my $expected = {$gi => $taxid};
-    my $got = NCBI::Taxonomy::get_taxid_from_gilist(\@gis);
-    is_deeply($got, $expected, "Taxid for a single species number ($gi)");
+    my @accs = ($acc);
+    my $expected = {$acc => $taxid};
+    my $got = NCBI::Taxonomy::get_taxid_from_gilist(\@accs);
+    is_deeply($got, $expected, "Taxid for a single species accession ($acc)");
 }
 
 # test for a whole list
-my @gis = (keys %{$testset});
+my @accs = (keys %{$testset});
 my $expected = $testset;
-my $got = NCBI::Taxonomy::get_taxid_from_gilist(\@gis);
+my $got = NCBI::Taxonomy::get_taxid_from_gilist(\@accs);
 is_deeply($got, $expected, "Taxids for a species list");
 
 done_testing();
