@@ -178,18 +178,14 @@ sub get_taxid_from_gilist {
     my $tmp = "";
     
     foreach my $gi (@{$gilist}) {
-	my $bytepos = ($gi-1)*$bytesperline;
-	
 	# check if the taxid is not present, but was already downloaded
 	if (exists $downloaded_gi_taxid{$gi})
 	{
 	    $logger->debug("Found taxid for gi $gi already downloaded");
 	    $taxid_found_by_gi{$gi} = int($downloaded_gi_taxid{$gi});
 	} else {
-	    seek(FH, $bytepos, 0);
-	    read(FH, $tmp, $bytesperline);
-	    my ($dat_gi, $dat_taxid) = unpack($data_format, $tmp);
-	    if ($dat_gi && $gi == $dat_gi) {
+	    my $dat_taxid = get_taxid_4_gi_acc($gi, { fh => $fh, header => \%header_info, gi_header_info => \%gi_header_info, acc_header_info => \%acc_header_info });
+	    if ($dat_taxid) {
 		$taxid_found_by_gi{$gi} = int($dat_taxid);
 	    } else {
 		my $output = qx(wget -q -O - 'http://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?tool=portal&db=nuccore&val=$gi&dopt=genbank&sendto=on&log$=seqview&extrafeat=976&maxplex=1');
@@ -416,14 +412,45 @@ sub getlineagebytaxid {
 
 sub getnewnodesimported {
     my $nodes = retrieve($taxnodesdatabase)  || $logger->logcroak("Unable to read new nodes database from '$taxnodesdatabase'");
-    
+
     return $nodes;
 }
 
 sub getranksimported {
     my $ranks = retrieve($taxranksdatabase)  || $logger->logcroak("Unable to read the ranks database from '$taxranksdatabase'");
-    
+
     return $ranks;
+}
+
+sub get_taxid_4_gi_acc {
+    my ($gi, $infos) = @_;
+
+    my $taxid;
+
+    #($gi, { fh => $fh, header => \%header_info, gi_header_info => \%gi_header_info, acc_header_info => \%acc_header_info })
+    if ($gi !~ /\D/)
+    {
+	# no non numerical characters => seems to be a gi
+	my $fileoffset = int($gi*$infos->{gi_header_info}{taxid_width}/8);
+
+	if ($fileoffset > $infos->{gi_header_info}{gi_data_length})
+	{
+	    return undef;
+	}
+
+	seek($infos->{fh}, $infos->{gi_header_info}{gi_data_offset}+$fileoffset, 0) || die;
+	read($infos->{fh}, $taxid, int($infos->{gi_header_info}{taxid_width}/8));
+
+	if (length($taxid) != 4)
+	{
+	    $taxid .= "\000"x(4-length($taxid));
+	}
+	$taxid = unpack("L", $taxid);
+    } else {
+	# contains non numerical characters => seems to be an accession
+    }
+
+    return $taxid;
 }
 
 1;
