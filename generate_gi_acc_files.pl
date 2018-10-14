@@ -80,7 +80,7 @@ my $header_length_expected = 128;
 my $header        = "\000"x$header_length_expected;
 
 my $major_version = 1;
-my $minor_version = 0;
+my $minor_version = 1;
 my $taxid_width   = 24;
 
 my ($sec, $min, $hour, $mday, $mon, $year) = localtime();
