@@ -451,15 +451,37 @@ sub get_taxid_4_gi_acc {
 	my $acc_req = $gi;
 	$acc_req =~ s/\.\d+$//;
 	return unless $infos->{acc_header_info}{acc_data_length};
-	my ($l,$r)=(0,$infos->{acc_header_info}{acc_data_length});
 	my $stepsize = $infos->{acc_header_info}{width_single_entry};
+	my ($l,$r)=(0,int($infos->{acc_header_info}{acc_data_length}/$stepsize)-1);
 	while ($l<=$r) {
 	    my $m=int(($l+$r)/2);
 	    my %entry = ();
-	    seek($infos->{fh}, $infos->{acc_header_info}{acc_data_offset}+$m, 0) || die;
+	    seek($infos->{fh}, $infos->{acc_header_info}{acc_data_offset}+($m*$stepsize), 0) || die;
 	    my $temp;
 	    read($infos->{fh}, $temp, $stepsize) || die;
 	    @entry{qw(flag_version accession taxid)} = unpack("C1a8a3", $temp);
+	    if (($entry{flag_version} & 128))
+	    {
+		# second entry
+		seek($infos->{fh}, $infos->{acc_header_info}{acc_data_offset}+(($m-1)*$stepsize), 0) || die;
+		read($infos->{fh}, $temp, $stepsize) || die;
+		my (undef, $acc, undef) = unpack("C1a8a3", $temp);
+		$entry{accession} = $acc.$entry{accession};
+		$entry{accession} =~ s/\s+$//;
+	    } else {
+		# second entry
+		seek($infos->{fh}, $infos->{acc_header_info}{acc_data_offset}+(($m+1)*$stepsize), 0) || die;
+		read($infos->{fh}, $temp, $stepsize);
+		if ($temp)
+		{
+		    my ($flag_version, $acc, undef) = unpack("C1a8a3", $temp);
+		    if ($flag_version & 128)
+		    {
+			$entry{accession} = $entry{accession}.$acc;
+		    }
+		}
+	    }
+	    $entry{accession} =~ s/\s+$//;
 	    if ($acc_req lt $entry{accession}) {
 		$r=$m-1;
 	    } elsif ($acc_req gt $entry{accession}) {
