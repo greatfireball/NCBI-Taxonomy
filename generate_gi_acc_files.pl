@@ -5,7 +5,7 @@ use warnings;
 
 my $basename = "taxonomy";
 
-my $gi_field = "\000"x(10*1024*1024);
+my $gi_field = "";
 my $ref_field = \$gi_field;
 
 my $acc_field = "";
@@ -28,8 +28,12 @@ while (<>)
     $max_gi = $gi if ($max_gi<$gi);
 
     my $taxid_compressed = substr(pack("l", $taxid), 0, int($taxid_width_bits/8));
-
-    seek($fh, $gi*int($taxid_width_bits/8), 0) || die;
+    my $seekpos = $gi*int($taxid_width_bits/8);
+    if ($seekpos+int($taxid_width_bits/8) > length($gi_field))
+    {
+	$gi_field .= "\000"x($seekpos+int($taxid_width_bits/8)-length($gi_field));
+    }
+    seek($fh, $seekpos, 0) || die;
     print $fh $taxid_compressed;
 
     my $version = 0;
