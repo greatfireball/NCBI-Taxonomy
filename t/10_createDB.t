@@ -24,4 +24,14 @@ my $errorcode = $?;
 
 is($errorcode, 0, "Test of error code of make_taxid_indizes.pl run");
 
+$cmd =  "zcat test.accession2taxid.gz | sort | ../../generate_gi_acc_files.pl";
+
+system($cmd);
+
+my $errorcode = $?;
+
+is($errorcode, 0, "Test of error code of generate_gi_acc_files.pl run");
+
+rename("taxonomy.taxonomy.bin", "gi_taxid.bin");
+
 done_testing();
