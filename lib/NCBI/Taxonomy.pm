@@ -448,6 +448,34 @@ sub get_taxid_4_gi_acc {
 	$taxid = unpack("L", $taxid);
     } else {
 	# contains non numerical characters => seems to be an accession
+	my $acc_req = $gi;
+	$acc_req =~ s/\.\d+$//;
+	return unless $infos->{acc_header_info}{acc_data_length};
+	my ($l,$r)=(0,$infos->{acc_header_info}{acc_data_length});
+	my $stepsize = $infos->{acc_header_info}{width_single_entry};
+	while ($l<=$r) {
+	    my $m=int(($l+$r)/2);
+	    my %entry = ();
+	    seek($infos->{fh}, $infos->{acc_header_info}{acc_data_offset}+$m, 0) || die;
+	    my $temp;
+	    read($infos->{fh}, $temp, $stepsize) || die;
+	    @entry{qw(flag_version accession taxid)} = unpack("C1a8a3", $temp);
+	    if ($acc_req lt $entry{accession}) {
+		$r=$m-1;
+	    } elsif ($acc_req gt $entry{accession}) {
+		$l=$m+1;
+	    } else {
+		my $taxid = $entry{taxid};
+		if (length($taxid) != 4)
+		{
+		    $taxid .= "\000"x(4-length($taxid));
+		}
+		$taxid = unpack("L", $taxid);
+
+		return $taxid;
+	    }
+	}
+	return undef;
     }
 
     return $taxid;
