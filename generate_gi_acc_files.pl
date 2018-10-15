@@ -5,7 +5,7 @@ use warnings;
 
 my $basename = "taxonomy";
 
-my $gi_field = "\000"x(10*1024*1024*1024);
+my $gi_field = "\000"x(10*1024*1024);
 my $ref_field = \$gi_field;
 
 my $acc_field = "";
