@@ -7,8 +7,7 @@ use DateTime::Format::Natural;
 
 use Storable qw(retrieve nstore);
 
-use version 0.77;
-our $VERSION=version->declare("0.80.0");
+use version 0.77; our $VERSION=version->declare("0.90.0");
 
 # for logging purposes we use the Log4perl module
 use Log::Log4perl;
@@ -81,7 +80,7 @@ sub getLineagesbyGI(\@) {
     my %gilist2search = ();
     # check if gis are only numbers!
     foreach (@gilist) {
-	$logger->logcroak("Use only numbers as GIs!") if ($_ =~ /\D/);
+	# $logger->logcroak("Use only numbers as GIs!") if ($_ =~ /\D/);
 	$gilist2search{$_}++;
     }
 
@@ -159,24 +158,33 @@ sub get_taxid_from_gilist {
 
     my %taxid_found_by_gi = ();
 
-    open(FH, "<", $taxdatabase) || $logger->logdie("Unable to open taxonomic database at '$taxdatabase'");
-    binmode(FH);
+    open(my $fh, "<", $taxdatabase) || $logger->logdie("Unable to open taxonomic database at '$taxdatabase'");
+    binmode($fh);
+
+    my ($file_header, $gi_header, $acc_header) = ("", "", "");
+    read($fh, $file_header, 128) || die;
+    my %header_info;
+    @header_info{qw(magic_byte majorver minorvar reserved gi_offset gi_length acc_offset acc_length taxid_width datetime md5sum1 md5sum2 reserved2)} = unpack("A4SSA8QQQQCA14A16A16A33", $file_header);
+    seek($fh, $header_info{gi_offset}, 0) || die;
+    read($fh, $gi_header, 128) || die;
+    my %gi_header_info;
+    @gi_header_info{qw(gi_data_offset gi_data_length taxid_width reserved)} = unpack("QQCA111", $gi_header);
+    seek($fh, $header_info{acc_offset}, 0) || die;
+    read($fh, $acc_header, 128) || die;
+    my %acc_header_info;
+    @acc_header_info{qw(acc_data_offset acc_data_length width_single_entry taxid_width reserved)} = unpack("QQCCA110", $acc_header);
     
     my $tmp = "";
     
     foreach my $gi (@{$gilist}) {
-	my $bytepos = ($gi-1)*$bytesperline;
-	
 	# check if the taxid is not present, but was already downloaded
 	if (exists $downloaded_gi_taxid{$gi})
 	{
 	    $logger->debug("Found taxid for gi $gi already downloaded");
 	    $taxid_found_by_gi{$gi} = int($downloaded_gi_taxid{$gi});
 	} else {
-	    seek(FH, $bytepos, 0);
-	    read(FH, $tmp, $bytesperline);
-	    my ($dat_gi, $dat_taxid) = unpack($data_format, $tmp);
-	    if ($dat_gi && $gi == $dat_gi) {
+	    my $dat_taxid = get_taxid_4_gi_acc($gi, { fh => $fh, header => \%header_info, gi_header_info => \%gi_header_info, acc_header_info => \%acc_header_info });
+	    if ($dat_taxid) {
 		$taxid_found_by_gi{$gi} = int($dat_taxid);
 	    } else {
 		my $output = qx(wget -q -O - 'http://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?tool=portal&db=nuccore&val=$gi&dopt=genbank&sendto=on&log$=seqview&extrafeat=976&maxplex=1');
@@ -205,7 +213,7 @@ sub get_taxid_from_gilist {
 	}
     }
     
-    close(FH) || logger->logdie("Unable to close taxonomic database at '$taxdatabase'");
+    close($fh) || logger->logdie("Unable to close taxonomic database at '$taxdatabase'");
 
     return \%taxid_found_by_gi;
 }
@@ -403,53 +411,215 @@ sub getlineagebytaxid {
 
 sub getnewnodesimported {
     my $nodes = retrieve($taxnodesdatabase)  || $logger->logcroak("Unable to read new nodes database from '$taxnodesdatabase'");
-    
+
     return $nodes;
 }
 
 sub getranksimported {
     my $ranks = retrieve($taxranksdatabase)  || $logger->logcroak("Unable to read the ranks database from '$taxranksdatabase'");
-    
+
     return $ranks;
+}
+
+sub get_taxid_4_gi_acc {
+    my ($gi, $infos) = @_;
+
+    my $taxid;
+
+    #($gi, { fh => $fh, header => \%header_info, gi_header_info => \%gi_header_info, acc_header_info => \%acc_header_info })
+    if ($gi !~ /\D/)
+    {
+	# no non numerical characters => seems to be a gi
+	my $fileoffset = int($gi*$infos->{gi_header_info}{taxid_width}/8);
+
+	if ($fileoffset > $infos->{gi_header_info}{gi_data_length})
+	{
+	    return undef;
+	}
+
+	seek($infos->{fh}, $infos->{gi_header_info}{gi_data_offset}+$fileoffset, 0) || die;
+	read($infos->{fh}, $taxid, int($infos->{gi_header_info}{taxid_width}/8));
+
+	if (length($taxid) != 4)
+	{
+	    $taxid .= "\000"x(4-length($taxid));
+	}
+	$taxid = unpack("L", $taxid);
+    } else {
+	# contains non numerical characters => seems to be an accession
+	my $acc_req = $gi;
+	$acc_req =~ s/\.\d+$//;
+	return unless $infos->{acc_header_info}{acc_data_length};
+	my $stepsize = $infos->{acc_header_info}{width_single_entry};
+	my ($l,$r)=(0,int($infos->{acc_header_info}{acc_data_length}/$stepsize)-1);
+	while ($l<=$r) {
+	    my $m=int(($l+$r)/2);
+	    my %entry = ();
+	    seek($infos->{fh}, $infos->{acc_header_info}{acc_data_offset}+($m*$stepsize), 0) || die;
+	    my $temp;
+	    read($infos->{fh}, $temp, $stepsize) || die;
+	    @entry{qw(flag_version accession taxid)} = unpack("C1a8a3", $temp);
+	    if (($entry{flag_version} & 128))
+	    {
+		# second entry
+		seek($infos->{fh}, $infos->{acc_header_info}{acc_data_offset}+(($m-1)*$stepsize), 0) || die;
+		read($infos->{fh}, $temp, $stepsize) || die;
+		my (undef, $acc, undef) = unpack("C1a8a3", $temp);
+		$entry{accession} = $acc.$entry{accession};
+		$entry{accession} =~ s/\s+$//;
+	    } else {
+		# second entry
+		seek($infos->{fh}, $infos->{acc_header_info}{acc_data_offset}+(($m+1)*$stepsize), 0) || die;
+		read($infos->{fh}, $temp, $stepsize);
+		if ($temp)
+		{
+		    my ($flag_version, $acc, undef) = unpack("C1a8a3", $temp);
+		    if ($flag_version & 128)
+		    {
+			$entry{accession} = $entry{accession}.$acc;
+		    }
+		}
+	    }
+	    $entry{accession} =~ s/\s+$//;
+	    if ($acc_req lt $entry{accession}) {
+		$r=$m-1;
+	    } elsif ($acc_req gt $entry{accession}) {
+		$l=$m+1;
+	    } else {
+		my $taxid = $entry{taxid};
+		if (length($taxid) != 4)
+		{
+		    $taxid .= "\000"x(4-length($taxid));
+		}
+		$taxid = unpack("L", $taxid);
+
+		return $taxid;
+	    }
+	}
+	return undef;
+    }
+
+    return $taxid;
 }
 
 1;
 
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
 
-NCBI::Taxonomy - Perl extension for blah blah blah
+NCBI::Taxonomy - Perl extension to convert lists of GIs or Accessions into TaxIDs and Lineage information
 
 =head1 SYNOPSIS
 
   use NCBI::Taxonomy;
-  blah blah blah
 
 =head1 DESCRIPTION
 
-Stub documentation for NCBI::Taxonomy, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
+This module can be used to convert lists of gene identifiers or accession numbers into taxonomic ids used by NCBI.
 
-Blah blah blah.
+=head2 FORMAT OF THE INDEX FILE
+
+C<NCBI::Taxonomy> uses it's own index file format. Starting with
+version C<0.9> the index file format has changed to support NCBIs
+moving from GIs to Accessions.
+Therefore, the index file is devided into three parts:
+
+=over4
+
+=item * index file header (currently 128 bytes)
+
+=item * GI part of the index file (variable length)
+
+=item * Accession part of the index file (variable length)
+
+=back
+
+The current version of the index file format is C<0.9>.
+
+=head3 INDEX FILE HEADER
+
+The main header contains the following information:
+
+      Field:        | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    MagicBytes      |         4        | "NTIF" as string for NCBI-Taxonomy-Index-File
+    Version(maj)    |         2        | major version number of file format as 16bit unsigned number
+    Version(min)    |         2        | minor version number of file format as 16bit unsigned number
+                    |         8        | Reserved
+    Offset GI part  |         8        | File offset of GI part as 64bit unsigned number
+    Length GI part  |         8        | Length of GI part as 64bit unsigned number
+    Offset Acc part |         8        | File offset of Accession part as 64bit unsigned number
+    Length Acc part |         8        | Length of Accession part as 64bit unsigned number
+    Width TaxID     |         1        | Width of the TaxID in Bits
+    Creation date   |        14        | Creation date of the index file in Format YYYYMMDDHHMMSS
+    md5sum input    |        16        | MD5sum of all input data processed to generate the index file
+    md5sum index    |        16        | MD5sum of complete index file (with this checksum set to all zeros)
+                    |        33        | Reserved
+
+Its size is currently 128 Bytes and contains important information to
+use the index file correctly.
+
+After the header, additional data might be placed, due to the start of
+the GI and Accession part is stated inside the header.
+
+=head3 GI PART OF THE INDEX FILE
+
+The GI section contain its own header providing the following information:
+
+      Field:             | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    Offset GI data part  |         8        | File offset of GI data part as 64bit unsigned number
+    Length GI data part  |         8        | Length of GI data part as 64bit unsigned number
+    Width TaxID          |         1        | Width of the TaxID in Bits
+                         |       111        | Reserved
+
+This part contains all mappings from GIs to TaxIDs. The format uses a
+fixed field width. The width (in bits) can be obtained from the field
+C<Width TaxID> from the GI section header.  Each entry contains as
+only value the TaxID. Those entries are placed at an offset of
+C<GI*(Width TaxID in bits)> inside the block. Therefore, one GI entry
+can be accessed via the GI, the offset of the GI-data-part, and the TaxID
+width both from the header section.
+
+=head3 ACC PART OF THE INDEX FILE
+
+The accession section contain its own header providing the following information:
+
+      Field:             | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    Offset acc data part |         8        | File offset of acc data part as 64bit unsigned number
+    Length acc data part |         8        | Length of acc data part as 64bit unsigned number
+    Width single entry   |         1        | Width of a single entry in Bits
+    Width TaxID          |         1        | Width of the TaxID in Bits
+                         |       110        | Reserved
+
+This part contains all mappings from accessions to TaxIDs. The format
+uses a fixed field width. Due to the variable length of the accessions
+(currently between 4 and 16 characters), at least one entry is used
+for an accession entry. One single entry contains the following
+information and has a width of C<Width single entry> bits:
+
+      Field:             | Bytes per Entry: | Description:
+   ----------------------------------------------------------------------------------------------------------
+    Flag and version     |         1        | Highest bit indicate a accession entry start if set. If highest
+                         |                  | bit is not set, the entry is part of the last entry having
+                         |                  | that flag field set.
+                         |                  | Lower 7 bits contain the version of the accession (max value 127)
+    Accession            |         8        | Contains the accession or additional parts of an accession
+                         |                  | (if flag in first byte is set). If the length is not 8 character
+                         |                  | it will be filled with spaces.
+    TaxID                |     variable     | TaxID with a width specified in accession part header
+
+All accessions are sorted alphanumerically and can be searched by a
+binary search. A complete accession entry contains one entry with its
+flag being set and all following entrys with the flag field unset.
 
 =head2 EXPORT
 
 None by default.
 
-
-
 =head1 SEE ALSO
 
-Mention other useful documentation such as the documentation of
-related modules or operating system documentation (such as man pages
-in UNIX), or any relevant external documentation such as RFCs or
-standards.
-
-If you have a mailing list set up for your module, mention it here.
-
-If you have a web site set up for your module, mention it here.
+To be filled
 
 =head1 HISTORY
 
@@ -504,11 +674,11 @@ Badges for build and coverage are added
 
 =head1 AUTHOR
 
-Frank Foerster, E<lt>frf53jh@biozentrum.uni-wuerzburg.deE<gt>
+Frank Foerster, E<lt>frank.foerster@ime.fraunhofer.deE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2009 by Frank Foerster
+Copyright (C) 2009-2018 by Frank Foerster
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.10.0 or,

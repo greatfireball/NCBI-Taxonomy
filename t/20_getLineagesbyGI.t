@@ -32,16 +32,27 @@ use RefData;
 # Afterwards I used the test tree to reconstruct the expected output
 
 my $testset = {
-   73 => $RefData::lineageclean->{23},
-   114 => $RefData::lineageclean->{23},
-   188 => $RefData::lineageclean->{22},
-   238 => $RefData::lineageclean->{10},
-   278 => $RefData::lineageclean->{5},
-   285 => $RefData::lineageclean->{4},
-   461 => $RefData::lineageclean->{21},
-   571 => $RefData::lineageclean->{22},
-   575 => $RefData::lineageclean->{22},
-   800 => $RefData::lineageclean->{23}
+   2  => $RefData::lineageclean->{4},
+   3  => $RefData::lineageclean->{4},
+   4  => $RefData::lineageclean->{3},
+   5  => $RefData::lineageclean->{4},
+   6  => $RefData::lineageclean->{1},
+   7  => $RefData::lineageclean->{4},
+   8  => $RefData::lineageclean->{4},
+   9  => $RefData::lineageclean->{1},
+   10 => $RefData::lineageclean->{1},
+   11 => $RefData::lineageclean->{2},
+   12 => $RefData::lineageclean->{3},
+   13 => $RefData::lineageclean->{3},
+   14 => $RefData::lineageclean->{2},
+   15 => $RefData::lineageclean->{3},
+   16 => $RefData::lineageclean->{2},
+   17 => $RefData::lineageclean->{2},
+   18 => $RefData::lineageclean->{2},
+   19 => $RefData::lineageclean->{1},
+   20 => $RefData::lineageclean->{4},
+   21 => $RefData::lineageclean->{2}
+
 };
 
 
