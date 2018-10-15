@@ -5,7 +5,7 @@ This module is used to parse the NCBI-Taxonomy files and return lists
 of taxonomic lineages for a given GI.
 
 ** Version
-   Current version is 0.80
+   Current version is 0.90
 
 ** Build
 
@@ -111,12 +111,15 @@ This module requires the following other modules:
   - First version available on [[https://github.com/greatfireball/NCBI-Taxonomy][GitHub]]
   - Added a licence file and a org-mode based readme file
   - Badges for build and coverage are added
+*** Version 0.90.0
+  - First version which supports Accessions and GIs after NCBI phases out GIs
+  - New index file format
 
 ** Copyright and licence
 
 The MIT License (MIT)
 
-Copyright (c) 2009-2015 Frank Förster
+Copyright (c) 2009-2018 Frank Förster
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
