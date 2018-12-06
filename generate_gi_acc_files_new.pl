@@ -20,6 +20,8 @@ use Digest::MD5 qw(md5);
 my $field = [];
 my $data = [];
 
+use Term::ProgressBar;
+
 $logger->info("Starting data import");
 
 while (<>)
@@ -76,6 +78,10 @@ my $compressed   = 0;
 
 $logger->info("Starting sorting and compression");
 
+my $progress = Term::ProgressBar->new({count => int(@$data), name => "Sort&Compress", ETA => 'linear', remove => 0});
+$progress->minor(0);
+my $next_update = 0;
+
 for(my $i=0; $i<@$data; $i++)
 {
     if (defined $data->[$i])
@@ -117,6 +123,9 @@ for(my $i=0; $i<@$data; $i++)
 
 	$data->[$i] = $data_compressed;
     }
+    $next_update = $progress->update($i) if $i >= $next_update;
 }
+
+$progress->update(int(@$data)) if int(@$data) >= $next_update;
 
 $logger->info(sprintf "Uncompressed length: %d, Compressed length: %d, Compression level: %.3f\n", $uncompressed, $compressed, $compressed/$uncompressed);
