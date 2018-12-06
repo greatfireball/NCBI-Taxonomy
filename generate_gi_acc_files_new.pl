@@ -79,6 +79,11 @@ my $compressed   = 0;
 
 $logger->info("Starting sorting and compression");
 
+my $gf = Gzip::Faster->new();
+$gf->gzip_format(1);    # switch to deflate format
+$gf->raw(0);            # switch to non-raw deflate format
+$gf->level(9);          # compression level 9
+
 my $progress = Term::ProgressBar->new({count => int(@$data), name => "Sort&Compress", ETA => 'linear', remove => 0});
 $progress->minor(0);
 my $next_update = 0;
@@ -114,7 +119,7 @@ for(my $i=0; $i<@$data; $i++)
         my $data_sorted = join("", map { $_->[1] } @dat2sort);
 	$uncompressed += length($data_sorted);
 
-	my $data_compressed = Gzip::Faster::deflate($data_sorted);
+	my $data_compressed = $gf->zip($data_sorted);
 
 	$compressed += length($data_compressed);
 
