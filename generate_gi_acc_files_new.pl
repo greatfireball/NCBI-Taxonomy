@@ -129,5 +129,28 @@ for(my $i=0; $i<@$data; $i++)
 }
 
 $progress->update(int(@$data)) if int(@$data) >= $next_update;
-
 $logger->info(sprintf "Uncompressed length: %d, Compressed length: %d, Compression level: %.3f\n", $uncompressed, $compressed, $compressed/$uncompressed);
+
+$logger->info("Writing output file");
+
+open(FH, ">", "hash_offsets.map") || die "$!\n";
+open(FD, ">", "accessions.dat") || die "$!\n";
+my $pos = 0;
+
+$progress = Term::ProgressBar->new({count => int(@$data), name => "Output Writing", ETA => 'linear', remove => 0});
+$progress->minor(0);
+$next_update = 0;
+
+for(my $i=0; $i<int(@$data); $i++)
+{
+    print FH pack("Q", $pos);
+    print FD $data->[$i];
+    $pos+=length($data->[$i]);
+    $next_update = $progress->update($i) if $i >= $next_update;
+}
+
+$progress->update(int(@$data)) if int(@$data) >= $next_update;
+close(FH) || die "$!\n";
+close(FD) || die "$!\n";
+
+$logger->info(sprintf "Written %d Bytes of output data and %d Bytes of hash files", $pos, 8*int(@$data));
