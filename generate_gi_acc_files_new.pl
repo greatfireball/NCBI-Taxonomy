@@ -3,8 +3,9 @@
 use strict;
 use warnings;
 
-my $hash_size = 10000019;
+#my $hash_size = 10000019;
 #my $hash_size = 9;
+my $hash_size = 1000003;
 my $taxid_width_bits   = 24;
 
 use Digest::MD5 qw(md5);
