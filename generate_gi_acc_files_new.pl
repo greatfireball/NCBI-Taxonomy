@@ -3,6 +3,13 @@
 use strict;
 use warnings;
 
+### Initialization Section
+use Log::Log4perl qw(:easy);
+Log::Log4perl->easy_init($INFO);  # Set priority of root logger to ERROR
+
+### Application Section
+my $logger = get_logger();
+
 #my $hash_size = 10000019;
 #my $hash_size = 9;
 my $hash_size = 1000003;
@@ -12,6 +19,8 @@ use Digest::MD5 qw(md5);
 
 my $field = [];
 my $data = [];
+
+$logger->info("Starting data import");
 
 while (<>)
 {
@@ -60,16 +69,18 @@ foreach (@$field)
     }
 }
 
-printf STDERR "%d values set, sum: %d, mean value: %.2f, %d undef values\n", $counter, $sum, ($sum/$counter), $undef_counter;
+$logger->info(sprintf "%d values set, sum: %d, mean value: %.2f, %d undef values\n", $counter, $sum, ($sum/$counter), $undef_counter);
 
 my $uncompressed = 0;
 my $compressed   = 0;
+
+$logger->info("Starting sorting and compression");
 
 for(my $i=0; $i<@$data; $i++)
 {
     if (defined $data->[$i])
     {
-	print STDERR "Sorting $i\n";
+	# print STDERR "Sorting $i\n";
 
 	my @dat2sort = ();
 
@@ -89,9 +100,9 @@ for(my $i=0; $i<@$data; $i++)
 	    push(@dat2sort, [$acc, $data_package]);
 	}
 
-	print STDERR "Unsorted: ", join(",", map {$_->[0]} (@dat2sort)), "\n";
+	# print STDERR "Unsorted: ", join(",", map {$_->[0]} (@dat2sort)), "\n";
 	@dat2sort = sort {$a->[0] cmp $b->[0]} (@dat2sort);
-	print STDERR "Sorted: ", join(",", map {$_->[0]} (@dat2sort)), "\n";
+	# print STDERR "Sorted: ", join(",", map {$_->[0]} (@dat2sort)), "\n";
 
         my $data_sorted = join("", map { $_->[1] } @dat2sort);
 	$uncompressed += length($data_sorted);
@@ -108,4 +119,4 @@ for(my $i=0; $i<@$data; $i++)
     }
 }
 
-printf STDERR "Uncompressed length: %d, Compressed length: %d, Compression level: %.3f\n", $uncompressed, $compressed, $compressed/$uncompressed;
+$logger->info(sprintf "Uncompressed length: %d, Compressed length: %d, Compression level: %.3f\n", $uncompressed, $compressed, $compressed/$uncompressed);
