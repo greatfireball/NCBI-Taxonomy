@@ -20,6 +20,7 @@ use Digest::MD5 qw(md5);
 my $field = [];
 my $data = [];
 
+use Gzip::Faster;
 use Term::ProgressBar;
 
 $logger->info("Starting data import");
@@ -113,11 +114,7 @@ for(my $i=0; $i<@$data; $i++)
         my $data_sorted = join("", map { $_->[1] } @dat2sort);
 	$uncompressed += length($data_sorted);
 
-	my $data_compressed = "";
-
-	use IO::Compress::Gzip qw(gzip $GzipError);
-
-	gzip \$data_sorted => \$data_compressed, '-Level' => 9, 'Minimal' => 1 || die "gzip failed: $GzipError";
+	my $data_compressed = Gzip::Faster::deflate($data_sorted);
 
 	$compressed += length($data_compressed);
 
