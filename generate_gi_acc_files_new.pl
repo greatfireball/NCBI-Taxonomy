@@ -12,8 +12,8 @@ my $logger = get_logger();
 
 #my $hash_size = 10000019;
 #my $hash_size = 9;
-my $hash_size  = 1000003;
-my $gi_buckets = 1000003;
+my $acc_buckets = 1000003;
+my $gi_buckets  = 1000003;
 my $taxid_width_bits   = 24;
 
 use Digest::MD5 qw(md5);
@@ -47,7 +47,7 @@ while (<>)
     # store the acc
     my $data_package = pack("C1C1a3a*", 0, $version, $taxid_compressed, $acc);
     substr($data_package, 0, 1, pack("C1", length($data_package)));
-    push(@{$acc_data}, $data_package);
+    push(@{$acc_data}, [$acc, $data_package]);
 }
 
 my $uncompressed = 0;
@@ -60,7 +60,7 @@ $gf->gzip_format(1);    # switch to deflate format
 $gf->raw(0);            # switch to non-raw deflate format
 $gf->level(9);          # compression level 9
 
-my $progress = Term::ProgressBar->new({count => int(@$gi_data), name => "Compress", ETA => 'linear', remove => 0});
+my $progress = Term::ProgressBar->new({count => int(@$gi_data), name => "CompressGIs", ETA => 'linear', remove => 0});
 $progress->minor(0);
 my $next_update = 0;
 
@@ -71,14 +71,52 @@ for (my $i=0; $i<@$gi_data; $i++)
 	# print STDERR "Sorting $i\n";
 	my $joined_string = join("", map {defined $_ ? $_ : pack("CCC", 0,0,0) } (@{$gi_data->[$i]}));
 	$uncompressed += length($joined_string);
-	my $data_compressed = $gf->zip($joined_string);
-	$compressed += length($data_compressed);
+	$gi_data->[$i] = $gf->zip($joined_string);
+	$compressed += length($gi_data->[$i]);
     }
     $next_update = $progress->update($i) if $i >= $next_update;
 }
 
 $progress->update(int(@$gi_data)) if int(@$gi_data) >= $next_update;
-$logger->info(sprintf "Uncompressed length: %d, Compressed length: %d, Compression level: %.3f\n", $uncompressed, $compressed, $compressed/$uncompressed);
+$logger->info(sprintf "GI: Uncompressed length: %d, Compressed length: %d, Compression level: %.3f\n", $uncompressed, $compressed, $compressed/$uncompressed);
+
+$logger->info("Starting sorting accessions");
+@{$acc_data} = map { $_->[1] } ( sort { $a->[0] cmp $b->[0] } (@{$acc_data}));
+$logger->info("Finished sorting accessions");
+
+$progress = Term::ProgressBar->new({count => int(@$acc_data), name => "CompressACCs", ETA => 'linear', remove => 0});
+$progress->minor(0);
+$next_update = 0;
+
+$uncompressed = 0;
+$compressed   = 0;
+my @acc_buckets = ();
+
+my @temp = ();
+
+for (my $i=0; $i<@$acc_data; $i++)
+{
+    push(@temp, $acc_data->[$i]);
+
+    if (int(@temp)>=$acc_buckets)
+    {
+	my $joined_string = join("", @temp);
+	@temp = ();
+	$uncompressed += length($joined_string);
+	push(@acc_buckets, $gf->zip($joined_string));
+	$compressed += length($acc_buckets[-1]);
+    }
+    $next_update = $progress->update($i) if $i >= $next_update;
+}
+$progress->update(int(@$acc_data)) if int(@$acc_data) >= $next_update;
+if (@temp)
+{
+    my $joined_string = join("", @temp);
+    $uncompressed += length($joined_string);
+    push(@acc_buckets, $gf->zip($joined_string));
+    $compressed += length($acc_buckets[-1]);
+}
+$logger->info(sprintf "Accession Uncompressed length: %d, Compressed length: %d, Compression level: %.3f\n", $uncompressed, $compressed, $compressed/$uncompressed);
 
 __END__
 $logger->info("Writing output file");
